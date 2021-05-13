@@ -16,7 +16,7 @@ namespace bridge
             door_number = args[0];
             quote_number = args[1];
            
-            string file = @"\\designsvr1\dropbox\" + "DataOutput " + quote_number + ".DO"; //location
+            string file = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\ " + quote_number  + @"\documents" + "DataOutput " + quote_number + ".DO"; //location
             string test = File.ReadAllText(file);
             test = test.Replace(quote_number, door_number);
             File.WriteAllText(file, test);
