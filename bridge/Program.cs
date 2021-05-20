@@ -42,7 +42,8 @@ namespace bridge
 
             //also edit the packing list 
 
-           
+            //at some point we are going to move this excel sheet to another directory too
+
             Microsoft.Office.Interop.Excel.Application xlApp = new Microsoft.Office.Interop.Excel.Application();
             Microsoft.Office.Interop.Excel.Workbook xlWorkbook = xlApp.Workbooks.Open(packingFile);
             Microsoft.Office.Interop.Excel.Worksheet xlWorksheet = xlWorkbook.Sheets[1]; // assume it is the first sheet
@@ -52,6 +53,8 @@ namespace bridge
             xlWorksheet.SaveAs(packingFile);
             xlWorkbook.Close(true); //close the excel sheet
             xlApp.Quit(); //close everything excel related so that theres no errors when the door program tries to connect 
+            
+
 
 
 
