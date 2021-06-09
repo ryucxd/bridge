@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Microsoft;
+using System.Data.SqlClient;
 
 namespace bridge
 {
@@ -13,8 +14,8 @@ namespace bridge
         static void Main(string[] args)
         {
             string door_number = "67097"; //params
-            string quote_number = "61586-1-1";//"60870"; //same 
-            string rev_number =  quote_number + "- Rev " + quote_number.Substring(quote_number.Length - 1);
+            string quote_number = "50887-16-1";//"60870"; //same 
+            string rev_number = quote_number + "- Rev " + quote_number.Substring(quote_number.Length - 1);
             //door_number = args[0];
             //quote_number = args[1];
 
@@ -25,7 +26,7 @@ namespace bridge
             string newPackingLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Packing List " + door_number + ".xlsx";
             string newEngineerLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Engineer Notes " + door_number + ".xlsx";
 
-            System.IO.Directory.CreateDirectory(@"\\designsvr1\apps\bridge_jobcard\" + door_number); 
+            System.IO.Directory.CreateDirectory(@"\\designsvr1\apps\bridge_jobcard\" + door_number);
             //string fileName = "DataOutput " + quote_number + "- Door Designer.DO";
 
             //^^ we need to copy and move this file before editing 
@@ -54,15 +55,46 @@ namespace bridge
             Microsoft.Office.Interop.Excel.Worksheet xlWorksheet = xlWorkbook.Sheets[1]; // assume it is the first sheet
             Microsoft.Office.Interop.Excel.Range xlRange = xlWorksheet.UsedRange; // get the entire used range
 
+            if (File.Exists(newPackingLocation))
+                File.Delete(newPackingLocation);
+
+
             xlWorksheet.Cells[5][7].Value2 = door_number.ToString();
             xlWorksheet.SaveAs(newPackingLocation);
             xlWorkbook.Close(true); //close the excel sheet
             xlApp.Quit(); //close everything excel related so that theres no errors when the door program tries to connect 
+            if (File.Exists(newEngineerLocation))
+                File.Delete(newEngineerLocation);
+            File.Copy(engineerFile, newEngineerLocation,true); // also move this one over with a new name
 
-            File.Copy(engineerFile, newEngineerLocation); // also move this one over with a new name
 
-
-
+            //check if there is a entry in dbo.door_program
+            string sql = "select door_id FROM dbo.door_program WHERE door_id = " + door_number;
+            using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
+            {
+                conn.Open();
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    var getdata = cmd.ExecuteScalar();
+                    if (getdata == null)
+                    {
+                        //This door does not exist in the program table so we need to insert it
+                        sql = "INSERT INTO dbo.door_program (door_id,programed_by_id,program_note,program_date) VALUES(" + door_number + ",314,'Programmed by bridge system',getdate())";
+                    }
+                    else
+                    {
+                        //update the door as programmed by 314
+                        sql = "UPDATE dbo.door_program set programed_by_id = 314,program_note = 'Programmed by bridge system',program_date = getdate() WHERE door_id = " + door_number;
+                    }
+                }
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    cmd.ExecuteNonQuery();
+                }
+                    conn.Close();
+            }
+            Console.WriteLine(sql);
+        //    Console.ReadLine();
 
 
 
