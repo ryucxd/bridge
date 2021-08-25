@@ -13,18 +13,19 @@ namespace bridge
     {
         static void Main(string[] args)
         {
-            string door_number = "67097"; //params
-            string quote_number = "50887-16-1";//"60870"; //same 
-            string rev_number = quote_number + "- Rev " + quote_number.Substring(quote_number.Length - 1);
-            //door_number = args[0];
-            //quote_number = args[1];
+            string door_number = ""; //params
+            string quote_number = "";//"60870"; //same 
+            door_number = args[0];
+            quote_number = args[1];
+            string rev_number = quote_number + "- Rev 1"; //+ quote_number.Substring(quote_number.Length - 1);
 
             string startFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\" + "DataOutput " + quote_number + "- Door Designer.DO"; ;//location
             string newFile = @"\\designsvr1\apps\Door Master\" + door_number + ".DO";
             string packingFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Packing List " + rev_number + ".xlsx"; //should be the default file path for the session for everyone
-            string engineerFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Engineers Notes " + rev_number + ".xlsx";
+            string engineerFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Engineers Notes word " +  rev_number + ".docx";
             string newPackingLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Packing List " + door_number + ".xlsx";
-            string newEngineerLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Engineer Notes " + door_number + ".xlsx";
+            string newEngineerLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Engineer Notes " + door_number + ".docx";
+
 
             System.IO.Directory.CreateDirectory(@"\\designsvr1\apps\bridge_jobcard\" + door_number);
             //string fileName = "DataOutput " + quote_number + "- Door Designer.DO";
