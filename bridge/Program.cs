@@ -20,11 +20,13 @@ namespace bridge
             string rev_number = quote_number + "- Rev 1"; //+ quote_number.Substring(quote_number.Length - 1);
 
             string startFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\" + "DataOutput " + quote_number + "- Door Designer.DO"; ;//location
-            string newFile = @"\\designsvr1\apps\Door Master\" + door_number + ".DO";
+            string newFile = @"\\designsvr1\apps\Door Master\Orders\" + door_number + ".DO";
+            string checksheet = @"\\designsvr1\apps\all doors\CheckSheet.pdf";
             string packingFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Packing List " + rev_number + ".xlsx"; //should be the default file path for the session for everyone
             string engineerFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Engineers Notes word " +  rev_number + ".docx";
             string newPackingLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Packing List " + door_number + ".xlsx";
             string newEngineerLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Engineer Notes " + door_number + ".docx";
+            string newChecksheetLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\CheckSheet.pdf";
 
 
             System.IO.Directory.CreateDirectory(@"\\designsvr1\apps\bridge_jobcard\" + door_number);
@@ -32,6 +34,7 @@ namespace bridge
 
             //^^ we need to copy and move this file before editing 
             System.IO.File.Copy(startFile, newFile, true); //true = overwrite
+            System.IO.File.Copy(checksheet, newChecksheetLocation, true); //true = overwrite
 
             string test = File.ReadAllText(newFile);
             //repplace the the - with ""
