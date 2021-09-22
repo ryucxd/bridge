@@ -25,6 +25,7 @@ namespace bridge
             string packingFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Packing List " + rev_number + ".xlsx"; //should be the default file path for the session for everyone
             string engineerFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Engineers Notes word " +  rev_number + ".docx";
             string newPackingLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Packing List " + door_number + ".xlsx";
+            string extraPackingLocation = @"\\DESIGNSVR1\terry\door_history 1\" + door_number + ".xlsx";
             string newEngineerLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Engineer Notes " + door_number + ".docx";
             string newChecksheetLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\CheckSheet.pdf";
 
@@ -69,8 +70,8 @@ namespace bridge
             xlApp.Quit(); //close everything excel related so that theres no errors when the door program tries to connect 
             if (File.Exists(newEngineerLocation))
                 File.Delete(newEngineerLocation);
-            File.Copy(engineerFile, newEngineerLocation,true); // also move this one over with a new name
-
+            File.Copy(engineerFile, newEngineerLocation,true); // also move this one over with a newmono name
+            File.Copy(newPackingLocation, extraPackingLocation, true); //copy to door history aswell
 
             //check if there is a entry in dbo.door_program
             string sql = "select door_id FROM dbo.door_program WHERE door_id = " + door_number;
