@@ -6,6 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 using Microsoft;
 using System.Data.SqlClient;
+using System.Data;
 
 namespace bridge
 {
@@ -23,7 +24,7 @@ namespace bridge
             string newFile = @"\\designsvr1\apps\Door Master\Orders\" + door_number + ".DO";
             string checksheet = @"\\designsvr1\apps\all doors\CheckSheet.pdf";
             string packingFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Packing List " + rev_number + ".xlsx"; //should be the default file path for the session for everyone
-            string engineerFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Engineers Notes word " +  rev_number + ".docx";
+            string engineerFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Engineers Notes word " + rev_number + ".docx";
             string newPackingLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Packing List " + door_number + ".xlsx";
             string extraPackingLocation = @"\\DESIGNSVR1\terry\door_history 1\" + door_number + ".xlsx";
             string newEngineerLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Engineer Notes " + door_number + ".docx";
@@ -63,18 +64,42 @@ namespace bridge
             if (File.Exists(newPackingLocation))
                 File.Delete(newPackingLocation);
 
-
+            string sql = "SELECT description FROM dbo.paint_to_door WHERE door_id = " + door_number;
+            string touch_up = "";
+            try
+            {
+                using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
+                {
+                    using (SqlCommand cmd = new SqlCommand(sql, conn))
+                    {
+                        conn.Open();
+                        SqlDataAdapter da = new SqlDataAdapter(cmd);
+                        DataTable dt = new DataTable();
+                        da.Fill(dt);
+                        conn.Close();
+                        for (int i = 0; i < dt.Rows.Count; i++)
+                        {
+                            if (i == 0)
+                                touch_up = dt.Rows[i][0].ToString();
+                            else
+                                touch_up = touch_up + " / " + dt.Rows[i][0].ToString();
+                        }
+                    }
+                }
+            }
+            catch { }
             xlWorksheet.Cells[5][7].Value2 = door_number.ToString();
+            xlWorksheet.Cells[5][20].Value2 = "Touch up paint required: " + touch_up;
             xlWorksheet.SaveAs(newPackingLocation);
             xlWorkbook.Close(true); //close the excel sheet
             xlApp.Quit(); //close everything excel related so that theres no errors when the door program tries to connect 
             if (File.Exists(newEngineerLocation))
                 File.Delete(newEngineerLocation);
-            File.Copy(engineerFile, newEngineerLocation,true); // also move this one over with a newmono name
+            File.Copy(engineerFile, newEngineerLocation, true); // also move this one over with a newmono name
             File.Copy(newPackingLocation, extraPackingLocation, true); //copy to door history aswell
 
             //check if there is a entry in dbo.door_program
-            string sql = "select door_id FROM dbo.door_program WHERE door_id = " + door_number;
+            sql = "select door_id FROM dbo.door_program WHERE door_id = " + door_number;
             using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
             {
                 conn.Open();
@@ -96,10 +121,10 @@ namespace bridge
                 {
                     cmd.ExecuteNonQuery();
                 }
-                    conn.Close();
+                conn.Close();
             }
             Console.WriteLine(sql);
-        //    Console.ReadLine();
+            //    Console.ReadLine();
 
 
 
