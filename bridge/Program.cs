@@ -91,19 +91,25 @@ namespace bridge
             }
             catch { }
 
-            using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
+
+            try
             {
-                conn.Open();
-                using (SqlCommand cmd = new SqlCommand("SELECT coalesce((CONVERT(VARCHAR(10), date_stores, 103)),'') ,coalesce(CONVERT(VARCHAR(10), date_pack, 103),'')  FROM dbo.door where id = " + door_number,conn))
+                using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
                 {
-                    DataTable dt = new DataTable();
-                    SqlDataAdapter da = new SqlDataAdapter(cmd);
-                    da.Fill(dt);
-                    stores_date = dt.Rows[0][0].ToString();
-                    pack_date = dt.Rows[0][1].ToString();
+                    conn.Open();
+                    using (SqlCommand cmd = new SqlCommand("SELECT coalesce((CONVERT(VARCHAR(10), date_stores, 103)),'') ,coalesce(CONVERT(VARCHAR(10), date_pack, 103),'')  FROM dbo.door where id = " + door_number, conn))
+                    {
+                        DataTable dt = new DataTable();
+                        SqlDataAdapter da = new SqlDataAdapter(cmd);
+                        da.Fill(dt);
+                        stores_date = dt.Rows[0][0].ToString();
+                        pack_date = dt.Rows[0][1].ToString();
+                    }
+                    conn.Close();
                 }
-                conn.Close();
             }
+            catch
+            { }
             xlWorksheet.Cells[5][7].Value2 = door_number.ToString();
 
             //stores date
