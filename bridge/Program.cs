@@ -66,6 +66,8 @@ namespace bridge
 
             string sql = "SELECT description FROM dbo.paint_to_door WHERE door_id = " + door_number;
             string touch_up = "";
+            string pack_date = "";
+            string stores_date = "";
             try
             {
                 using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
@@ -76,7 +78,6 @@ namespace bridge
                         SqlDataAdapter da = new SqlDataAdapter(cmd);
                         DataTable dt = new DataTable();
                         da.Fill(dt);
-                        conn.Close();
                         for (int i = 0; i < dt.Rows.Count; i++)
                         {
                             if (i == 0)
@@ -85,10 +86,31 @@ namespace bridge
                                 touch_up = touch_up + " / " + dt.Rows[i][0].ToString();
                         }
                     }
+                    conn.Close();
                 }
             }
             catch { }
+
+            using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
+            {
+                conn.Open();
+                using (SqlCommand cmd = new SqlCommand("SELECT coalesce((CONVERT(VARCHAR(10), date_stores, 103)),'') ,coalesce(CONVERT(VARCHAR(10), date_pack, 103),'')  FROM dbo.door where id = " + door_number,conn))
+                {
+                    DataTable dt = new DataTable();
+                    SqlDataAdapter da = new SqlDataAdapter(cmd);
+                    da.Fill(dt);
+                    stores_date = dt.Rows[0][0].ToString();
+                    pack_date = dt.Rows[0][1].ToString();
+                }
+                conn.Close();
+            }
             xlWorksheet.Cells[5][7].Value2 = door_number.ToString();
+
+            //stores date
+            xlWorksheet.Cells[3][7].Value2 = stores_date.ToString();
+            //packing date
+            xlWorksheet.Cells[3][8].Value2 = pack_date.ToString();
+
             xlWorksheet.Cells[5][20].Value2 = "Touch up paint required: " + touch_up;
             xlWorksheet.SaveAs(newPackingLocation);
             xlWorkbook.Close(true); //close the excel sheet
@@ -119,7 +141,7 @@ namespace bridge
                 }
                 using (SqlCommand cmd = new SqlCommand(sql, conn))
                 {
-                    cmd.ExecuteNonQuery();
+                    // cmd.ExecuteNonQuery();
                 }
                 conn.Close();
             }
