@@ -22,6 +22,7 @@ namespace bridge
 
             string startFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\" + "DataOutput " + quote_number + "- Door Designer.DO"; ;//location
             string newFile = @"\\designsvr1\apps\Door Master\Orders\" + door_number + ".DO";
+            string hardwareExcelFile = @"\\designsvr1\solidworks\DWDevelopment\Specifications\" + quote_number + @"\Documents\HWAllocation " + quote_number + "- Door Designer.xlsx";
             string checksheet = @"\\designsvr1\apps\all doors\CheckSheet.pdf";
             string packingFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Packing List " + rev_number + ".xlsx"; //should be the default file path for the session for everyone
             string engineerFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\Engineers Notes word " + rev_number + ".docx";
@@ -29,6 +30,7 @@ namespace bridge
             string extraPackingLocation = @"\\DESIGNSVR1\terry\door_history 1\" + door_number + ".xlsx";
             string newEngineerLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\Engineer Notes " + door_number + ".docx";
             string newChecksheetLocation = @"\\designsvr1\apps\bridge_jobcard\" + door_number + @"\CheckSheet.pdf";
+            string newHardwareExcelFile = @"\\designsvr1\subcontracts\Order_List_Data\" + door_number + ".csv";
 
 
             System.IO.Directory.CreateDirectory(@"\\designsvr1\apps\bridge_jobcard\" + door_number);
@@ -52,6 +54,89 @@ namespace bridge
                 line_number = line_number + 1;
             }
 
+            //here we change some stuff in the text file IF the door is a SR2
+            string sql = "select dbo.door.id from dbo.door left join dbo.door_type on dbo.door.door_type_id = dbo.door_type.id where security_rating_level = 2 and door_id = " + door_number;
+            int sr2 = 0;
+            using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
+            {
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    conn.Open();
+                    string getData = Convert.ToString(cmd.ExecuteScalar());
+                    if (getData != null)
+                        sr2 = -1;
+                    else
+                        sr2 = 0;
+                    conn.Close();
+                }
+            }
+
+            if (sr2 == -1) //it is a SR2
+            {
+                //check what row 94 is
+                int lineOfNumber = 94;
+                string rowData = "";
+                string row94 = "";
+                string row96 = "";
+                string sr2Check = File.ReadAllText(newFile);
+                string[] arrLine = File.ReadAllLines(newFile);
+                rowData = arrLine[lineOfNumber - 1].ToString();
+
+                if (rowData != "112" || rowData != "111")
+                {
+                    row94 = arrLine[93].ToString(); //-1 because count starts at 0
+                    arrLine[93] = "0";
+                    arrLine[87] = row94.ToString();
+
+                    row96 = arrLine[95].ToString(); // same 
+                    arrLine[95] = "0";
+                    arrLine[88] = row96.ToString();
+                    File.WriteAllLines(newFile, arrLine);
+                }
+            }
+
+            if (File.Exists(hardwareExcelFile) == true)
+            {
+                //edit the huw excel sheet thing
+                Microsoft.Office.Interop.Excel.Application xlAppCSV = new Microsoft.Office.Interop.Excel.Application();
+                Microsoft.Office.Interop.Excel.Workbook xlWorkbookCSV = xlAppCSV.Workbooks.Open(hardwareExcelFile);
+                Microsoft.Office.Interop.Excel.Worksheet xlWorksheetCSV = xlWorkbookCSV.Sheets[1]; // assume it is the first sheet
+                Microsoft.Office.Interop.Excel.Range xlRangeCSV = xlWorksheetCSV.UsedRange; // get the entire used range
+
+                //get the rows
+                var hwFirstColumn = (string)(xlWorksheetCSV.Cells[1, 2] as Microsoft.Office.Interop.Excel.Range).Value;
+                var hwSecondtColumn = (string)(xlWorksheetCSV.Cells[1, 3] as Microsoft.Office.Interop.Excel.Range).Value;
+
+                string[] splitFirstColumn = hwFirstColumn.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+                string[] splitSecondColumn = hwSecondtColumn.Split(new string[] { "\r\n", "\r", "\n" }, StringSplitOptions.None);
+
+                //readd the new excel items
+                for (int i = 0; i < splitFirstColumn.Count(); i++)
+                {
+                    xlWorksheetCSV.Cells[1][i + 1].Value2 = door_number.ToString();
+                    xlWorksheetCSV.Cells[2][i + 1].Value2 = splitFirstColumn[i].ToString();
+                }
+                for (int i = 0; i < splitFirstColumn.Count(); i++)
+                {
+                    xlWorksheetCSV.Cells[1][i + 1].Value2 = door_number.ToString();
+                    xlWorksheetCSV.Cells[3][i + 1].Value2 = splitSecondColumn[i].ToString();
+                }
+
+                Console.WriteLine("-------");
+                for (int i = 0; i < 5; i++)
+                {
+                    Console.WriteLine(splitSecondColumn[i].ToString());
+                }
+
+
+                //temp = xlWorksheetCSV.Cells[2][0].Value2;
+
+                xlWorksheetCSV.SaveAs(newHardwareExcelFile);
+                xlWorkbookCSV.Close(true); //close the excel sheet
+                xlAppCSV.Quit(); //close everything excel related so that theres no errors when the door program tries to connect 
+            }
+
+
             //also edit the packing list 
 
             //at some point we are going to move this excel sheet to another directory too
@@ -64,7 +149,7 @@ namespace bridge
             if (File.Exists(newPackingLocation))
                 File.Delete(newPackingLocation);
 
-            string sql = "SELECT description FROM dbo.paint_to_door WHERE door_id = " + door_number;
+            sql = "SELECT description FROM dbo.paint_to_door WHERE door_id = " + door_number;
             string touch_up = "";
             string pack_date = "";
             string stores_date = "";
