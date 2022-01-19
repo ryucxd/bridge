@@ -86,11 +86,11 @@ namespace bridge
                 {
                     row94 = arrLine[93].ToString(); //-1 because count starts at 0
                     arrLine[93] = "0";
-                    arrLine[87] = row94.ToString();
+                    arrLine[87] = row94.ToString(); //88
 
                     row96 = arrLine[95].ToString(); // same 
                     arrLine[95] = "0";
-                    arrLine[88] = row96.ToString();
+                    arrLine[88] = row96.ToString(); //89
                     File.WriteAllLines(newFile, arrLine);
                 }
             }
@@ -122,11 +122,6 @@ namespace bridge
                     xlWorksheetCSV.Cells[3][i + 1].Value2 = splitSecondColumn[i].ToString();
                 }
 
-                Console.WriteLine("-------");
-                for (int i = 0; i < 5; i++)
-                {
-                    Console.WriteLine(splitSecondColumn[i].ToString());
-                }
 
 
                 //temp = xlWorksheetCSV.Cells[2][0].Value2;
