@@ -55,7 +55,7 @@ namespace bridge
             }
 
             //here we change some stuff in the text file IF the door is a SR2
-            string sql = "select dbo.door.id from dbo.door left join dbo.door_type on dbo.door.door_type_id = dbo.door_type.id where security_rating_level = 2 and door_id = " + door_number;
+            string sql = "select dbo.door.id from dbo.door left join dbo.door_type on dbo.door.door_type_id = dbo.door_type.id where security_rating_level = 2 and dbo.door.id = " + door_number;
             int sr2 = 0;
             using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
             {
@@ -63,7 +63,9 @@ namespace bridge
                 {
                     conn.Open();
                     string getData = Convert.ToString(cmd.ExecuteScalar());
-                    if (getData != null)
+                    //Console.WriteLine(getData);
+                    //Console.ReadLine();
+                    if (getData.Length > 4)
                         sr2 = -1;
                     else
                         sr2 = 0;
@@ -116,7 +118,7 @@ namespace bridge
                     xlWorksheetCSV.Cells[1][i + 1].Value2 = door_number.ToString();
                     xlWorksheetCSV.Cells[2][i + 1].Value2 = splitFirstColumn[i].ToString();
                 }
-                for (int i = 0; i < splitFirstColumn.Count(); i++)
+                for (int i = 0; i < splitSecondColumn.Count(); i++)
                 {
                     xlWorksheetCSV.Cells[1][i + 1].Value2 = door_number.ToString();
                     xlWorksheetCSV.Cells[3][i + 1].Value2 = splitSecondColumn[i].ToString();
@@ -126,7 +128,7 @@ namespace bridge
 
                 //temp = xlWorksheetCSV.Cells[2][0].Value2;
 
-                xlWorksheetCSV.SaveAs(newHardwareExcelFile);
+                xlWorksheetCSV.SaveAs(newHardwareExcelFile, Microsoft.Office.Interop.Excel.XlFileFormat.xlCSV);
                 xlWorkbookCSV.Close(true); //close the excel sheet
                 xlAppCSV.Quit(); //close everything excel related so that theres no errors when the door program tries to connect 
             }
