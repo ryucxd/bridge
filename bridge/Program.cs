@@ -84,7 +84,7 @@ namespace bridge
                 string[] arrLine = File.ReadAllLines(newFile);
                 rowData = arrLine[lineOfNumber - 1].ToString();
 
-                if (rowData != "112" || rowData != "111")
+                if (rowData != "112" && rowData != "111")
                 {
                     row94 = arrLine[93].ToString(); //-1 because count starts at 0
                     arrLine[93] = "0";
