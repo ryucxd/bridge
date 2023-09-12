@@ -399,7 +399,6 @@ namespace bridge
                                 {
                                     xlWorksheetGTInput.Cells[2][34].Value2 = cmdCloser.ExecuteScalar().ToString();
                                 }
-
                             }
 
                             //panics
@@ -411,10 +410,7 @@ namespace bridge
                                 {
                                     xlWorksheetGTInput.Cells[2][57].Value2 = cmdCloser.ExecuteScalar().ToString();
                                 }
-
                             }
-
-
 
                             xlWorksheetGTInput.Cells[2][63].Value2 = dt.Rows[0]["pushPlateSide"].ToString(); //translate)
                             if (dt.Rows[0]["pushPlateSide"].ToString() == "Pull Side")
@@ -464,12 +460,7 @@ namespace bridge
                                     if (dt.Rows[0]["closerOnPassive"].ToString() == "1")
                                         xlWorksheetGTInput.Cells[2][71].Value2 = "Yes";
                                 }
-
                             }
-
-
-
-
 
 
 
