@@ -17,7 +17,7 @@ namespace bridge
         {
             //below 2 need to be blank to run automated
             string door_number = "67097"; //params
-            string quote_number = "80315-10-1";//"60870"; //same 
+            string quote_number = "80396-2-1";//"60870"; //same 
             //door_number = args[0]; //uncomment these for automation
             //quote_number = args[1];//^^
 
@@ -403,6 +403,25 @@ namespace bridge
                                 }
                             }
 
+                            if (dt.Rows[0]["CentreLeverInside"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][36].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
+
+                            if (dt.Rows[0]["CentreLeverOutside"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][37].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
+
+                            if (dt.Rows[0]["CentreLockingInside"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][38].Value2 = "Yes";
+
+                            if (dt.Rows[0]["CentreLockingOutside"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][39].Value2 = "Yes";
+
+
+                            if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
+                            else if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
+                            else if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
+                                xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
 
                             //door loop
                             if (dt.Rows[0]["DoorLoopType"].ToString().Contains("DL8"))
@@ -414,6 +433,52 @@ namespace bridge
                                 xlWorksheetGTInput.Cells[2][42].Value2 = "Abloy EA280 Concealed";
 
 
+                            //top lock
+                            sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["TopLockStockCode"].ToString() + "'";
+                            using (SqlCommand cmdTopLock = new SqlCommand(sql, conn))
+                            {
+                                var temp = cmdTopLock.ExecuteScalar();
+                                if (temp != null)
+                                {
+                                    xlWorksheetGTInput.Cells[2][45].Value2 = cmdTopLock.ExecuteScalar().ToString();
+
+                                    if (dt.Rows[0]["ToplockingInside"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][47].Value2 = "Yes";
+                                    if (dt.Rows[0]["TopLockingOutside"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][48].Value2 = "Yes";
+
+
+                                    if (dt.Rows[0]["TopInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["TopOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                        xlWorksheetGTInput.Cells[2][49].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
+                                    else if (dt.Rows[0]["TopInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["TopOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                        xlWorksheetGTInput.Cells[2][49].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
+                                    else if (dt.Rows[0]["TopInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["TopOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
+                                        xlWorksheetGTInput.Cells[2][49].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
+
+                                }
+
+                            }
+
+                            //bot lock
+
+                            sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["TopLockStockCode"].ToString() + "'";
+                            using (SqlCommand cmdTopLock = new SqlCommand(sql, conn))
+                            {
+                                var temp = cmdTopLock.ExecuteScalar();
+                                if (temp != null)
+                                {
+                                    xlWorksheetGTInput.Cells[2][51].Value2 = cmdTopLock.ExecuteScalar().ToString();
+
+                                    if (dt.Rows[0]["ToplockingInside"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][53].Value2 = "Yes";
+                                    if (dt.Rows[0]["TopLockingOutside"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][54].Value2 = "Yes";
+                                    //55 cylinderrrr
+
+                                }
+                            }
+
+
                             //panics
                             sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["PanicDeviceStockCode"].ToString() + "'";
                             using (SqlCommand cmdPanic = new SqlCommand(sql, conn))
@@ -422,10 +487,25 @@ namespace bridge
                                 if (temp != null)
                                 {
                                     xlWorksheetGTInput.Cells[2][57].Value2 = cmdPanic.ExecuteScalar().ToString();
+
+                                    xlWorksheetGTInput.Cells[2][58].Value2 = xlWorksheetGTInput.Cells[2][59].Value2;
+
+
+                                    sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["OADStockCode"].ToString() + "'";
+                                    using (SqlCommand cmdOAD = new SqlCommand(sql, conn))
+                                    {
+                                        var temp2 = cmdOAD.ExecuteScalar();
+                                        if (temp2 != null)
+                                        {
+                                            xlWorksheetGTInput.Cells[2][60].Value2 = cmdOAD.ExecuteScalar().ToString();
+                                        }
+                                    }
+
                                 }
                             }
 
-                            xlWorksheetGTInput.Cells[2][63].Value2 = dt.Rows[0]["pushPlateSide"].ToString(); //translate)
+
+                            //xlWorksheetGTInput.Cells[2][63].Value2 = dt.Rows[0]["pushPlateSide"].ToString(); //translate)
                             if (dt.Rows[0]["pushPlateSide"].ToString() == "Pull Side")
                                 xlWorksheetGTInput.Cells[2][63].Value2 = "Pullside";
                             else if (dt.Rows[0]["pushPlateSide"].ToString() == "Push Side")
@@ -433,7 +513,6 @@ namespace bridge
                             else if (dt.Rows[0]["pushPlateSide"].ToString() == "Both Side")
                                 xlWorksheetGTInput.Cells[2][63].Value2 = "Both sides";
 
-                            //translate
                             if (dt.Rows[0]["pushPlateLeaves"].ToString() == "Active")
                                 xlWorksheetGTInput.Cells[2][64].Value2 = "1st Leaf";
                             else if (dt.Rows[0]["pushPlateLeaves"].ToString() == "Passive")
@@ -551,7 +630,7 @@ namespace bridge
                                 else if (dt.Rows[0]["Passive1VisionLouvreSetback"].ToString() == "0")
                                     xlWorksheetGTInput.Cells[2][102].Value2 = "Central";
 
-                               // xlWorksheetGTInput.Cells[2][103].Value2 = dt.Rows[0]["Passive1VisionLouvreDistanceFromFloor"].ToString();
+                                // xlWorksheetGTInput.Cells[2][103].Value2 = dt.Rows[0]["Passive1VisionLouvreDistanceFromFloor"].ToString();
 
 
                             }
@@ -640,8 +719,17 @@ namespace bridge
 
                                 xlWorksheetGTInput.Cells[2][121].Value2 = dt.Rows[0]["Passive2VisionLouvreDistanceFromFloor"].ToString();
 
-                            }
 
+                                sql = "select stock_code FROM dbo.STOCK where description = '" + dt.Rows[0]["TopLockingBolt"].ToString() + "'";
+                                using (SqlCommand cmdAny1 = new SqlCommand(sql))
+                                {
+                                    sql = "select GT_input_name FROM dbo.bridge_hardware where stock_code = '" + cmdAny1.ExecuteScalar().ToString() + "'";
+                                    using (SqlCommand cmdAny1StockCode = new SqlCommand(sql, conn))
+                                    {
+                                        xlWorksheetGTInput.Cells[2][130].Value2 = cmdAny1StockCode.ExecuteScalar().ToString().Trim();
+                                    }
+                                }
+                            }
 
 
                             xlWorksheetGTInput.Cells[2][126].Value2 = dt.Rows[0]["KickPlateSide"].ToString();
