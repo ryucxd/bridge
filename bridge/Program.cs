@@ -406,6 +406,9 @@ namespace bridge
                             if (dt.Rows[0]["CentreLeverInside"].ToString() == "1")
                                 xlWorksheetGTInput.Cells[2][36].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
 
+                            if (dt.Rows[0]["centrelockheight"].ToString().Length > 0)
+                                xlWorksheetGTInput.Cells[4][36].Value2 = dt.Rows[0]["centrelockheight"].ToString(); //special box
+
                             if (dt.Rows[0]["CentreLeverOutside"].ToString() == "1")
                                 xlWorksheetGTInput.Cells[2][37].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
 
@@ -474,6 +477,12 @@ namespace bridge
                                     if (dt.Rows[0]["TopLockingOutside"].ToString() == "1")
                                         xlWorksheetGTInput.Cells[2][54].Value2 = "Yes";
                                     //55 cylinderrrr
+                                    if (dt.Rows[0]["BotInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["BottomOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                        xlWorksheetGTInput.Cells[2][55].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
+                                    else if (dt.Rows[0]["BottomInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["BottomOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                        xlWorksheetGTInput.Cells[2][55].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
+                                    else if (dt.Rows[0]["BottomInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["BottomOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
+                                        xlWorksheetGTInput.Cells[2][55].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
 
                                 }
                             }
@@ -504,6 +513,16 @@ namespace bridge
                                 }
                             }
 
+
+                            //pushplate stuffs
+                            if (dt.Rows[0]["PullHandleCode"].ToString() == "286")
+                            {
+                                //if there is a pushplate then we use > "Pull Handle 19 x 300 Rose Mounted St.St. & 330mm x 76mm Push Plate"
+                                if (dt.Rows[0]["PushPlateType"].ToString().Length > 0)
+                                    xlWorksheetGTInput.Cells[2][62].Value2 = "Pull Handle 19 x 300 Rose Mounted St.St. & 330mm x 76mm Push Plate";
+                                else
+                                    xlWorksheetGTInput.Cells[2][62].Value2 = "Pull Handle 19 x 300 Rose Mounted St.St.";
+                            }
 
                             //xlWorksheetGTInput.Cells[2][63].Value2 = dt.Rows[0]["pushPlateSide"].ToString(); //translate)
                             if (dt.Rows[0]["pushPlateSide"].ToString() == "Pull Side")
