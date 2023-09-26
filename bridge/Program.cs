@@ -18,13 +18,56 @@ namespace bridge
             //below 2 need to be blank to run automated
             string door_number = "67097"; //params
             string quote_number = "80396-2-1";//"60870"; //same 
-            //door_number = args[0]; //uncomment these for automation
-            //quote_number = args[1];//^^
+                                              //door_number = args[0]; //uncomment these for automation
+                                              //quote_number = args[1];//^^
+
+            //wipe everything in that directory
+            try
+            {
+                var directory = new DirectoryInfo(@"C:\temp\GTINPUT\") { Attributes = FileAttributes.Normal };
+                foreach (var info in directory.GetFileSystemInfos("*", SearchOption.AllDirectories))
+                {
+                    info.Attributes = FileAttributes.Normal;
+                }
+                directory.Delete(true);
+            }
+            catch { }
+
+            System.IO.Directory.CreateDirectory(@"C:\temp\GTINPUT\");
 
 
             //if the door is a thermal -- continue down the old path
             int thermal = 0;
-            if (thermal == -1)
+            string door_type = "";
+
+            using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
+            {
+                conn.Open();
+                string sql = "select coalesce(thermal,0) FROM dbo.door_type dt " +
+                    "left join dbo.door d on dt.id = d.door_type_id " +
+                    "where d.id = " + door_number;
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    thermal = Convert.ToInt32(cmd.ExecuteScalar().ToString());
+                }
+
+
+                sql = "select door_type_description FROM dbo.door_type dt " +
+                    "left join dbo.door d on dt.id = d.door_type_id " +
+                    "where d.id = " + door_number;
+
+                using (SqlCommand cmd = new SqlCommand(sql, conn))
+                {
+                    door_type = cmd.ExecuteScalar().ToString();
+                }
+
+
+
+                conn.Close();
+            }
+
+            if (thermal == -1 || door_type.Contains(" SG "))  
             {
                 string rev_number = quote_number + "- Rev 1"; //+ quote_number.Substring(quote_number.Length - 1);
 
@@ -265,516 +308,555 @@ namespace bridge
             {
                 object misValue = System.Reflection.Missing.Value;
 
-                //first up is getting the door type -- for now we are assuming its SR2
-                string door_type = "SR2";
                 string GT_input_location = @"\\designsvr1\apps\ALL DOORS\New Programmer Folder\GT INPUT";
-                System.IO.Directory.CreateDirectory(@"C:\temp\GTINPUT\");
                 string new_GT_input_location = (@"C:\temp\GTINPUT\GT INPUT");
-                if (door_type == "SR2")
+
+                if (door_type.Contains("SR2"))
                 {
-                    GT_input_location += " SR2.xlsm";
-                    new_GT_input_location += " SR2.xlsm";
 
-                    //^^ we need to copy and move this file before editing --temp for now
-                    System.IO.File.Copy(GT_input_location, new_GT_input_location, true); //true = overwrite
-
-                    //edit the huw excel sheet thing
-                    Microsoft.Office.Interop.Excel.Application xlAppGTInput = new Microsoft.Office.Interop.Excel.Application();
-                    Microsoft.Office.Interop.Excel.Workbook xlWorkbookGTInput = xlAppGTInput.Workbooks.Open(new_GT_input_location, 0, false, 5, "", "", false,
-                    Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "", true, false, 0, true, false, false);
-                    Microsoft.Office.Interop.Excel.Worksheet xlWorksheetGTInput = xlWorkbookGTInput.Sheets[1]; // assume it is the first sheet
-                    Microsoft.Office.Interop.Excel.Range xlRangeCSV = xlWorksheetGTInput.UsedRange; // get the entire used range
-
-                    //rename new_GT_input_location -- cant save it as the same name because of read/write issues
-                    new_GT_input_location = @"C:\temp\GTINPUT\GT INPUT new.xlsm";
-
-
-                    xlAppGTInput.DisplayAlerts = false;
-
-                    using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
+                    try
                     {
-                        conn.Open();
+                        GT_input_location += " SR2.xlsm";
+                        new_GT_input_location += " SR2.xlsm";
 
-                        string sql = "select * " +
-                            "FROM dbo.DWBridge dw " +
-                            "left join dbo.door d on dw.SalesOrderNum = d.quote_number " +
-                            "left join dbo.SALES_LEDGER s on d.customer_acc_ref = s.ACCOUNT_REF " +
-                            "left join dbo.door_type dt on d.door_type_id = dt.id " +
-                            "where d.id = " + door_number + " AND d.quote_number = '" + quote_number + "'";
+                        //^^ we need to copy and move this file before editing --temp for now
+                        System.IO.File.Copy(GT_input_location, new_GT_input_location, true); //true = overwrite
 
-                        using (SqlCommand cmd = new SqlCommand(sql, conn))
+                        //edit the huw excel sheet thing
+                        Microsoft.Office.Interop.Excel.Application xlAppGTInput = new Microsoft.Office.Interop.Excel.Application();
+                        Microsoft.Office.Interop.Excel.Workbook xlWorkbookGTInput = xlAppGTInput.Workbooks.Open(new_GT_input_location, 0, false, 5, "", "", false,
+                        Microsoft.Office.Interop.Excel.XlPlatform.xlWindows, "", true, false, 0, true, false, false);
+                        Microsoft.Office.Interop.Excel.Worksheet xlWorksheetGTInput = xlWorkbookGTInput.Sheets[1]; // assume it is the first sheet
+                        Microsoft.Office.Interop.Excel.Range xlRangeCSV = xlWorksheetGTInput.UsedRange; // get the entire used range
+
+                        //rename new_GT_input_location -- cant save it as the same name because of read/write issues
+                        new_GT_input_location = @"C:\temp\GTINPUT\GT INPUT " + door_number + ".xlsm";
+
+
+                        xlAppGTInput.DisplayAlerts = false;
+
+                        using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
                         {
-                            SqlDataAdapter da = new SqlDataAdapter(cmd);
-                            DataTable dt = new DataTable();
+                            conn.Open();
 
-                            da.Fill(dt);
+                            string sql = "select * " +
+                                "FROM dbo.DWBridge dw " +
+                                "left join dbo.door d on dw.SalesOrderNum = d.quote_number " +
+                                "left join dbo.SALES_LEDGER s on d.customer_acc_ref = s.ACCOUNT_REF " +
+                                "left join dbo.door_type dt on d.door_type_id = dt.id " +
+                                "where d.id = " + door_number + " AND d.quote_number = '" + quote_number + "'";
 
-                            if (dt.Rows.Count == 0)
+                            using (SqlCommand cmd = new SqlCommand(sql, conn))
                             {
-                                Console.WriteLine("There is no record in DWBridge :(");
-                                Console.ReadLine();
-                                return;
-                            }
+                                SqlDataAdapter da = new SqlDataAdapter(cmd);
+                                DataTable dt = new DataTable();
 
-                            //[col][row] //column 2 = B
-                            xlWorksheetGTInput.Cells[2][1].Value2 = door_number;
-                            xlAppGTInput.CalculateUntilAsyncQueriesDone();
-                            //xlWorksheetGTInput.Cells[2][2].Value2 = quote_number.ToString();
-                            xlWorksheetGTInput.Cells[2][3].Value2 = dt.Rows[0]["NAME"].ToString();
-                            xlWorksheetGTInput.Cells[2][5].Value2 = dt.Rows[0]["quantity_same"].ToString();
-                            xlWorksheetGTInput.Cells[2][6].Value2 = dt.Rows[0]["door_ref"].ToString();
+                                da.Fill(dt);
 
-                            if (dt.Rows[0]["double_y_n"].ToString() == "-1")
-                                xlWorksheetGTInput.Cells[2][8].Value2 = "Double A+B-Skin";
-                            else
-                                xlWorksheetGTInput.Cells[2][8].Value2 = "Single A-Skin";
+                                if (dt.Rows.Count == 0)
+                                {
+                                    Console.WriteLine("There is no record in DWBridge :(");
+                                    Console.ReadLine();
+                                    return;
+                                }
 
-                            if (dt.Rows[0]["DoorStyle"].ToString() == "Double (Unequal Split)")
-                                xlWorksheetGTInput.Cells[2][9].Value2 = "Yes";
+                                //[col][row] //column 2 = B
+                                xlWorksheetGTInput.Cells[2][1].Value2 = door_number;
+                                xlAppGTInput.CalculateUntilAsyncQueriesDone();
+                                xlWorksheetGTInput.Cells[2][2].Value2 = quote_number.ToString();
+                                xlWorksheetGTInput.Cells[2][3].Value2 = dt.Rows[0]["NAME"].ToString();
+
+                                sql = "select top 1 left(forename,1) + left(surname,1) FROM dbo.bridge_log b " +
+                                    "left join [user_info].dbo.[user] u on b.staff_id = u.id " +
+                                    "where door_id = " + door_number + " order by b.id desc";
+
+                                using (SqlCommand cmdProgrammer = new SqlCommand(sql, conn))
+                                {
+                                    xlWorksheetGTInput.Cells[2][4].Value2 = cmdProgrammer.ExecuteScalar().ToString();
+                                }
+
+                                xlWorksheetGTInput.Cells[2][5].Value2 = dt.Rows[0]["quantity_same"].ToString();
+                                xlWorksheetGTInput.Cells[2][6].Value2 = dt.Rows[0]["door_ref"].ToString();
+
+                                if (dt.Rows[0]["double_y_n"].ToString() == "-1")
+                                    xlWorksheetGTInput.Cells[2][8].Value2 = "Double A+B-Skin";
+                                else
+                                    xlWorksheetGTInput.Cells[2][8].Value2 = "Single A-Skin";
+
+                                if (dt.Rows[0]["DoorStyle"].ToString() == "Double (Unequal Split)")
+                                    xlWorksheetGTInput.Cells[2][9].Value2 = "Yes";
 
 
-                            if (dt.Rows[0]["DoorStyle"].ToString().Contains("Double"))
-                            {
-                                if (dt.Rows[0]["NAME"].ToString() == "JODAN CONTRACTS LTD")
+                                if (dt.Rows[0]["DoorStyle"].ToString().Contains("Double"))
+                                {
+                                    if (dt.Rows[0]["NAME"].ToString() == "JODAN CONTRACTS LTD")
+                                    {
+                                        xlWorksheetGTInput.Cells[2][13].Value2 = "Welded";
+                                    }
+                                    else
+                                        xlWorksheetGTInput.Cells[2][13].Value2 = "Bolted";
+                                }
+                                else if (dt.Rows[0]["DoorStyle"].ToString().Contains("Single"))
                                 {
                                     xlWorksheetGTInput.Cells[2][13].Value2 = "Welded";
                                 }
+
+                                xlWorksheetGTInput.Cells[2][15].Value2 = "Galv";
+
+                                if (dt.Rows[0]["door_type_description"].ToString().Contains("Mortice"))
+                                {
+                                    xlWorksheetGTInput.Cells[2][18].Value2 = "Security Door Mortice";
+                                }
+                                else if (dt.Rows[0]["door_type_description"].ToString().Contains("Panic"))
+                                {
+                                    xlWorksheetGTInput.Cells[2][18].Value2 = "Security Door Panic";
+                                }
+
+
+                                xlWorksheetGTInput.Cells[2][20].Value2 = dt.Rows[0]["SOW"].ToString();
+                                xlWorksheetGTInput.Cells[2][21].Value2 = dt.Rows[0]["SOH"].ToString();
+                                //xlWorksheetGTInput.Cells[2][26].Value2 = dt.Rows[0]["hingeQty"].ToString();
+
+                                //need to translate this
+                                if (dt.Rows[0]["CillType"].ToString().Contains("Aluminium"))
+                                    xlWorksheetGTInput.Cells[2][27].Value2 = "Standard Aluminium";
+                                else if (dt.Rows[0]["CillType"].ToString() == "H Type")
+                                    xlWorksheetGTInput.Cells[2][27].Value2 = "Cill H type";
                                 else
-                                    xlWorksheetGTInput.Cells[2][13].Value2 = "Bolted";
-                            }
-                            else if (dt.Rows[0]["DoorStyle"].ToString().Contains("Single"))
-                            {
-                                xlWorksheetGTInput.Cells[2][13].Value2 = "Welded";
-                            }
-
-                            xlWorksheetGTInput.Cells[2][15].Value2 = "Galv";
-
-                            if (dt.Rows[0]["door_type_description"].ToString().Contains("Mortice"))
-                            {
-                                xlWorksheetGTInput.Cells[2][18].Value2 = "Security Door Mortice";
-                            }
-                            else if (dt.Rows[0]["door_type_description"].ToString().Contains("Panic"))
-                            {
-                                xlWorksheetGTInput.Cells[2][18].Value2 = "Security Door Panic";
-                            }
+                                    xlWorksheetGTInput.Cells[2][27].Value2 = dt.Rows[0]["CillType"].ToString();
 
 
-                            xlWorksheetGTInput.Cells[2][20].Value2 = dt.Rows[0]["SOW"].ToString();
-                            xlWorksheetGTInput.Cells[2][21].Value2 = dt.Rows[0]["SOH"].ToString();
-                            //xlWorksheetGTInput.Cells[2][26].Value2 = dt.Rows[0]["hingeQty"].ToString();
+                                //  xlWorksheetGTInput.Cells[2][28].Value2 = dt.Rows[0]["fixingType"].ToString();
 
-                            //need to translate this
-                            if (dt.Rows[0]["CillType"].ToString().Contains("Aluminium"))
-                                xlWorksheetGTInput.Cells[2][27].Value2 = "Standard Aluminium";
-                            else if (dt.Rows[0]["CillType"].ToString() == "H Type")
-                                xlWorksheetGTInput.Cells[2][27].Value2 = "Cill H type";
-                            else
-                                xlWorksheetGTInput.Cells[2][27].Value2 = dt.Rows[0]["CillType"].ToString();
+                                //translate
+                                if (dt.Rows[0]["hasJackingScrews"].ToString() == "Jacking Screws")
+                                    xlWorksheetGTInput.Cells[2][29].Value2 = "Yes";
 
 
-                            //  xlWorksheetGTInput.Cells[2][28].Value2 = dt.Rows[0]["fixingType"].ToString();
-
-                            //translate
-                            if (dt.Rows[0]["hasJackingScrews"].ToString() == "Jacking Screws")
-                                xlWorksheetGTInput.Cells[2][29].Value2 = "Yes";
+                                xlWorksheetGTInput.Cells[2][30].Value2 = dt.Rows[0]["fixingTo"].ToString();
 
 
-                            xlWorksheetGTInput.Cells[2][30].Value2 = dt.Rows[0]["fixingTo"].ToString();
+                                //translate
+                                if (dt.Rows[0]["Handing"].ToString().Contains("L"))
+                                    xlWorksheetGTInput.Cells[2][31].Value2 = "Left Hand";
+                                else if (dt.Rows[0]["Handing"].ToString().Contains("R"))
+                                    xlWorksheetGTInput.Cells[2][31].Value2 = "Right Hand";
 
-
-                            //translate
-                            if (dt.Rows[0]["Handing"].ToString().Contains("L"))
-                                xlWorksheetGTInput.Cells[2][31].Value2 = "Left Hand";
-                            else if (dt.Rows[0]["Handing"].ToString().Contains("R"))
-                                xlWorksheetGTInput.Cells[2][31].Value2 = "Right Hand";
-
-                            // xlWorksheetGTInput.Cells[2][32].Value2 = dt.Rows[0]["openingDirection"].ToString();
+                                // xlWorksheetGTInput.Cells[2][32].Value2 = dt.Rows[0]["openingDirection"].ToString();
 
 
 
-                            //center locks
-                            sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["CentreLockStockCode"].ToString() + "'";
-                            using (SqlCommand cmdCenterLock = new SqlCommand(sql, conn))
-                            {
-                                var temp = cmdCenterLock.ExecuteScalar();
-                                if (temp != null)
+                                //center locks
+                                sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["CentreLockStockCode"].ToString() + "'";
+                                using (SqlCommand cmdCenterLock = new SqlCommand(sql, conn))
                                 {
-                                    xlWorksheetGTInput.Cells[2][34].Value2 = cmdCenterLock.ExecuteScalar().ToString();
-                                }
-                            }
-
-                            if (dt.Rows[0]["CentreLeverInside"].ToString() == "1")
-                                xlWorksheetGTInput.Cells[2][36].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
-
-                            if (dt.Rows[0]["centrelockheight"].ToString().Length > 0)
-                                xlWorksheetGTInput.Cells[4][36].Value2 = dt.Rows[0]["centrelockheight"].ToString(); //special box
-
-                            if (dt.Rows[0]["CentreLeverOutside"].ToString() == "1")
-                                xlWorksheetGTInput.Cells[2][37].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
-
-                            if (dt.Rows[0]["CentreLockingInside"].ToString() == "1")
-                                xlWorksheetGTInput.Cells[2][38].Value2 = "Yes";
-
-                            if (dt.Rows[0]["CentreLockingOutside"].ToString() == "1")
-                                xlWorksheetGTInput.Cells[2][39].Value2 = "Yes";
-
-
-                            if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
-                                xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
-                            else if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
-                                xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
-                            else if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
-                                xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
-
-                            //door loop
-                            if (dt.Rows[0]["DoorLoopType"].ToString().Contains("DL8"))
-                            {
-                                xlWorksheetGTInput.Cells[2][42].Value2 = "Abloy DL8 Surface Mounted"; //same for the below??
-                                xlWorksheetGTInput.Cells[2][43].Value2 = "Active Leaf";
-                            }
-                            else if (dt.Rows[0]["DoorLoopType"].ToString().Contains("EA280"))
-                                xlWorksheetGTInput.Cells[2][42].Value2 = "Abloy EA280 Concealed";
-
-
-                            //top lock
-                            sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["TopLockStockCode"].ToString() + "'";
-                            using (SqlCommand cmdTopLock = new SqlCommand(sql, conn))
-                            {
-                                var temp = cmdTopLock.ExecuteScalar();
-                                if (temp != null)
-                                {
-                                    xlWorksheetGTInput.Cells[2][45].Value2 = cmdTopLock.ExecuteScalar().ToString();
-
-                                    if (dt.Rows[0]["ToplockingInside"].ToString() == "1")
-                                        xlWorksheetGTInput.Cells[2][47].Value2 = "Yes";
-                                    if (dt.Rows[0]["TopLockingOutside"].ToString() == "1")
-                                        xlWorksheetGTInput.Cells[2][48].Value2 = "Yes";
-
-
-                                    if (dt.Rows[0]["TopInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["TopOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
-                                        xlWorksheetGTInput.Cells[2][49].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
-                                    else if (dt.Rows[0]["TopInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["TopOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
-                                        xlWorksheetGTInput.Cells[2][49].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
-                                    else if (dt.Rows[0]["TopInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["TopOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
-                                        xlWorksheetGTInput.Cells[2][49].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
-
-                                }
-
-                            }
-
-                            //bot lock
-
-                            sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["TopLockStockCode"].ToString() + "'";
-                            using (SqlCommand cmdTopLock = new SqlCommand(sql, conn))
-                            {
-                                var temp = cmdTopLock.ExecuteScalar();
-                                if (temp != null)
-                                {
-                                    xlWorksheetGTInput.Cells[2][51].Value2 = cmdTopLock.ExecuteScalar().ToString();
-
-                                    if (dt.Rows[0]["ToplockingInside"].ToString() == "1")
-                                        xlWorksheetGTInput.Cells[2][53].Value2 = "Yes";
-                                    if (dt.Rows[0]["TopLockingOutside"].ToString() == "1")
-                                        xlWorksheetGTInput.Cells[2][54].Value2 = "Yes";
-                                    //55 cylinderrrr
-                                    if (dt.Rows[0]["BotInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["BottomOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
-                                        xlWorksheetGTInput.Cells[2][55].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
-                                    else if (dt.Rows[0]["BottomInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["BottomOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
-                                        xlWorksheetGTInput.Cells[2][55].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
-                                    else if (dt.Rows[0]["BottomInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["BottomOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
-                                        xlWorksheetGTInput.Cells[2][55].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
-
-                                }
-                            }
-
-
-                            //panics
-                            sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["PanicDeviceStockCode"].ToString() + "'";
-                            using (SqlCommand cmdPanic = new SqlCommand(sql, conn))
-                            {
-                                var temp = cmdPanic.ExecuteScalar();
-                                if (temp != null)
-                                {
-                                    xlWorksheetGTInput.Cells[2][57].Value2 = cmdPanic.ExecuteScalar().ToString();
-
-                                    xlWorksheetGTInput.Cells[2][58].Value2 = xlWorksheetGTInput.Cells[2][59].Value2;
-
-
-                                    sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["OADStockCode"].ToString() + "'";
-                                    using (SqlCommand cmdOAD = new SqlCommand(sql, conn))
+                                    var temp = cmdCenterLock.ExecuteScalar();
+                                    if (temp != null)
                                     {
-                                        var temp2 = cmdOAD.ExecuteScalar();
-                                        if (temp2 != null)
+                                        xlWorksheetGTInput.Cells[2][34].Value2 = cmdCenterLock.ExecuteScalar().ToString();
+                                    }
+                                }
+
+                                if (dt.Rows[0]["CentreLeverInside"].ToString() == "1")
+                                    xlWorksheetGTInput.Cells[2][36].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
+
+                                if (dt.Rows[0]["centrelockheight"].ToString().Length > 0)
+                                    xlWorksheetGTInput.Cells[4][36].Value2 = dt.Rows[0]["centrelockheight"].ToString(); //special box
+
+                                if (dt.Rows[0]["CentreLeverOutside"].ToString() == "1")
+                                    xlWorksheetGTInput.Cells[2][37].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
+
+                                if (dt.Rows[0]["CentreLockingInside"].ToString() == "1")
+                                    xlWorksheetGTInput.Cells[2][38].Value2 = "Yes";
+
+                                if (dt.Rows[0]["CentreLockingOutside"].ToString() == "1")
+                                    xlWorksheetGTInput.Cells[2][39].Value2 = "Yes";
+
+
+                                if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                    xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
+                                else if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                    xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
+                                else if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
+                                    xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
+
+                                //door loop
+                                if (dt.Rows[0]["DoorLoopType"].ToString().Contains("DL8"))
+                                {
+                                    xlWorksheetGTInput.Cells[2][42].Value2 = "Abloy DL8 Surface Mounted"; //same for the below??
+                                    xlWorksheetGTInput.Cells[2][43].Value2 = "Active Leaf";
+                                }
+                                else if (dt.Rows[0]["DoorLoopType"].ToString().Contains("EA280"))
+                                    xlWorksheetGTInput.Cells[2][42].Value2 = "Abloy EA280 Concealed";
+
+
+                                //top lock
+                                sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["TopLockStockCode"].ToString() + "'";
+                                using (SqlCommand cmdTopLock = new SqlCommand(sql, conn))
+                                {
+                                    var temp = cmdTopLock.ExecuteScalar();
+                                    if (temp != null)
+                                    {
+                                        xlWorksheetGTInput.Cells[2][45].Value2 = cmdTopLock.ExecuteScalar().ToString();
+
+                                        if (dt.Rows[0]["ToplockingInside"].ToString() == "1")
+                                            xlWorksheetGTInput.Cells[2][47].Value2 = "Yes";
+                                        if (dt.Rows[0]["TopLockingOutside"].ToString() == "1")
+                                            xlWorksheetGTInput.Cells[2][48].Value2 = "Yes";
+
+
+                                        if (dt.Rows[0]["TopInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["TopOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                            xlWorksheetGTInput.Cells[2][49].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
+                                        else if (dt.Rows[0]["TopInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["TopOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                            xlWorksheetGTInput.Cells[2][49].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
+                                        else if (dt.Rows[0]["TopInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["TopOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
+                                            xlWorksheetGTInput.Cells[2][49].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
+
+                                    }
+
+                                }
+
+                                //bot lock
+
+                                sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["TopLockStockCode"].ToString() + "'";
+                                using (SqlCommand cmdTopLock = new SqlCommand(sql, conn))
+                                {
+                                    var temp = cmdTopLock.ExecuteScalar();
+                                    if (temp != null)
+                                    {
+                                        xlWorksheetGTInput.Cells[2][51].Value2 = cmdTopLock.ExecuteScalar().ToString();
+
+                                        if (dt.Rows[0]["ToplockingInside"].ToString() == "1")
+                                            xlWorksheetGTInput.Cells[2][53].Value2 = "Yes";
+                                        if (dt.Rows[0]["TopLockingOutside"].ToString() == "1")
+                                            xlWorksheetGTInput.Cells[2][54].Value2 = "Yes";
+                                        //55 cylinderrrr
+                                        if (dt.Rows[0]["BotInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["BottomOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                            xlWorksheetGTInput.Cells[2][55].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
+                                        else if (dt.Rows[0]["BottomInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["BottomOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
+                                            xlWorksheetGTInput.Cells[2][55].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
+                                        else if (dt.Rows[0]["BottomInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["BottomOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
+                                            xlWorksheetGTInput.Cells[2][55].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
+
+                                    }
+                                }
+
+
+                                //panics
+                                sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["PanicDeviceStockCode"].ToString() + "'";
+                                using (SqlCommand cmdPanic = new SqlCommand(sql, conn))
+                                {
+                                    var temp = cmdPanic.ExecuteScalar();
+                                    if (temp != null)
+                                    {
+                                        xlWorksheetGTInput.Cells[2][57].Value2 = cmdPanic.ExecuteScalar().ToString();
+
+                                        xlWorksheetGTInput.Cells[2][58].Value2 = xlWorksheetGTInput.Cells[2][59].Value2;
+
+
+                                        sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["OADStockCode"].ToString() + "'";
+                                        using (SqlCommand cmdOAD = new SqlCommand(sql, conn))
                                         {
-                                            xlWorksheetGTInput.Cells[2][60].Value2 = cmdOAD.ExecuteScalar().ToString();
+                                            var temp2 = cmdOAD.ExecuteScalar();
+                                            if (temp2 != null)
+                                            {
+                                                xlWorksheetGTInput.Cells[2][60].Value2 = cmdOAD.ExecuteScalar().ToString();
+                                            }
+                                        }
+
+                                    }
+                                }
+
+
+                                //pushplate stuffs
+                                if (dt.Rows[0]["PullHandleCode"].ToString() == "286")
+                                {
+                                    //if there is a pushplate then we use > "Pull Handle 19 x 300 Rose Mounted St.St. & 330mm x 76mm Push Plate"
+                                    if (dt.Rows[0]["PushPlateType"].ToString().Length > 0)
+                                        xlWorksheetGTInput.Cells[2][62].Value2 = "Pull Handle 19 x 300 Rose Mounted St.St. & 330mm x 76mm Push Plate";
+                                    else
+                                        xlWorksheetGTInput.Cells[2][62].Value2 = "Pull Handle 19 x 300 Rose Mounted St.St.";
+                                }
+
+                                //xlWorksheetGTInput.Cells[2][63].Value2 = dt.Rows[0]["pushPlateSide"].ToString(); //translate)
+                                if (dt.Rows[0]["pushPlateSide"].ToString() == "Pull Side")
+                                    xlWorksheetGTInput.Cells[2][63].Value2 = "Pullside";
+                                else if (dt.Rows[0]["pushPlateSide"].ToString() == "Push Side")
+                                    xlWorksheetGTInput.Cells[2][63].Value2 = "Pushside";
+                                else if (dt.Rows[0]["pushPlateSide"].ToString() == "Both Side")
+                                    xlWorksheetGTInput.Cells[2][63].Value2 = "Both sides";
+
+                                if (dt.Rows[0]["pushPlateLeaves"].ToString() == "Active")
+                                    xlWorksheetGTInput.Cells[2][64].Value2 = "1st Leaf";
+                                else if (dt.Rows[0]["pushPlateLeaves"].ToString() == "Passive")
+                                    xlWorksheetGTInput.Cells[2][64].Value2 = "2nd Leaf";
+                                else if (dt.Rows[0]["pushPlateLeaves"].ToString() == "Active/Passive")
+                                    xlWorksheetGTInput.Cells[2][64].Value2 = "Both Leafs";
+
+
+
+
+                                //Closers
+
+                                sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["CloserStockCode"].ToString() + "'";
+                                using (SqlCommand cmdCloser = new SqlCommand(sql, conn))
+                                {
+                                    var temp = cmdCloser.ExecuteScalar();
+                                    if (temp != null)
+                                    {
+                                        xlWorksheetGTInput.Cells[2][67].Value2 = cmdCloser.ExecuteScalar().ToString();
+
+                                        xlWorksheetGTInput.Cells[2][68].Value2 = dt.Rows[0]["closerPullside"].ToString(); //closerPullside = 1 then pull side closerpushside = 1 then push
+                                        if (dt.Rows[0]["closerPullside"].ToString() == "1" && dt.Rows[0]["closerpushside"].ToString() == "0")
+                                            xlWorksheetGTInput.Cells[2][68].Value2 = "Pullside";
+                                        else if (dt.Rows[0]["closerPullside"].ToString() == "0" && dt.Rows[0]["closerpushside"].ToString() == "1")
+                                            xlWorksheetGTInput.Cells[2][68].Value2 = "Pushside";
+
+                                        if (dt.Rows[0]["closerOnActive"].ToString() == "1")
+                                            xlWorksheetGTInput.Cells[2][69].Value2 = "Yes";
+
+                                        if (dt.Rows[0]["closerOnPassive"].ToString() == "1")
+                                            xlWorksheetGTInput.Cells[2][71].Value2 = "Yes";
+                                    }
+                                }
+
+
+
+
+                                if (dt.Rows[0]["StayLeaves"].ToString() == "Active")
+                                    xlWorksheetGTInput.Cells[2][64].Value2 = "1st Leaf";
+                                else if (dt.Rows[0]["StayLeaves"].ToString() == "Passive")
+                                    xlWorksheetGTInput.Cells[2][64].Value2 = "2nd Leaf";
+                                else if (dt.Rows[0]["StayLeaves"].ToString() == "Active/Passive")
+                                    xlWorksheetGTInput.Cells[2][64].Value2 = "Both Leafs";
+
+                                //end of closers
+
+
+
+
+                                //stay
+                                sql = "SELECT RTRIM(GT_input_name) FROM dbo.bridge_hardware bh " +
+                                    "left join dbo.stock s on bh.stock_code = s.stock_code WHERE s.description = '" + dt.Rows[0]["StayType"].ToString() + "'";
+                                using (SqlCommand cmdStay = new SqlCommand(sql, conn))
+                                {
+                                    if (string.IsNullOrEmpty(dt.Rows[0]["StayType"].ToString()))
+                                    { }
+                                    else
+                                        xlWorksheetGTInput.Cells[2][74].Value2 = cmdStay.ExecuteScalar().ToString().Trim();
+                                }
+
+                                //leaf selector
+                                if (dt.Rows[0]["LeafSelectorType"].ToString().Contains("MK2 SELECTOR EXTENDED  CATCH 152 ARM SAA"))
+                                    xlWorksheetGTInput.Cells[2][77].Value2 = " c/w Extended Catch & Arm SAA (Wedge)";
+
+                                if (dt.Rows[0]["SpyHoleType"].ToString().Length > 0)
+                                    xlWorksheetGTInput.Cells[2][83].Value2 = "Zero 200 UL Door Viewer (Fire Rated)";
+
+
+                                //vision / lourvre #1 ACTIVE
+                                if (Convert.ToInt32(dt.Rows[0]["Active1VisionGlassThickness"].ToString()) > 0) //need to be int
+                                {
+                                    xlWorksheetGTInput.Cells[2][90].Value2 = "Vision";
+                                    xlWorksheetGTInput.Cells[2][91].Value2 = dt.Rows[0]["Active1VisionLouvreHeight"].ToString();
+                                    xlWorksheetGTInput.Cells[2][92].Value2 = dt.Rows[0]["Active1VisionLouvreWidth"].ToString();
+
+                                    if (dt.Rows[0]["Active1VisionLouvreSetback"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][93].Value2 = "Offset";
+                                    else if (dt.Rows[0]["Active1VisionLouvreSetback"].ToString() == "0")
+                                        xlWorksheetGTInput.Cells[2][93].Value2 = "Central";
+
+                                    xlWorksheetGTInput.Cells[2][94].Value2 = dt.Rows[0]["Active1VisionLouvreDistanceFromFloor"].ToString();
+
+
+                                }
+                                else if (Convert.ToInt32(dt.Rows[0]["Active1VisionGlassThickness"].ToString()) == 0 &&
+                                         Convert.ToInt32(dt.Rows[0]["Active1VisionLouvreHeight"].ToString()) > 0) //need to be int
+                                {
+                                    xlWorksheetGTInput.Cells[2][90].Value2 = "Louver";
+                                    xlWorksheetGTInput.Cells[2][91].Value2 = dt.Rows[0]["Active1VisionLouvreHeight"].ToString();
+
+                                    //if this value is higher than the calculation to the right of it > set it to the calculation limit
+                                    if (xlWorksheetGTInput.Cells[2][91].Value2 > xlWorksheetGTInput.Cells[3][91].Value2)
+                                        xlWorksheetGTInput.Cells[2][91].Value2 = xlWorksheetGTInput.Cells[3][91].Value2;
+
+                                    xlWorksheetGTInput.Cells[2][92].Value2 = dt.Rows[0]["Active1VisionLouvreWidth"].ToString();
+
+
+                                    if (dt.Rows[0]["Active1VisionLouvreSetback"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][93].Value2 = "Offset";
+                                    else if (dt.Rows[0]["Active1VisionLouvreSetback"].ToString() == "0")
+                                        xlWorksheetGTInput.Cells[2][93].Value2 = "Central";
+
+                                    xlWorksheetGTInput.Cells[2][94].Value2 = dt.Rows[0]["Active1VisionLouvreDistanceFromFloor"].ToString();
+                                }
+
+                                //vision / lourvre #1 PASSIVE
+                                if (Convert.ToInt32(dt.Rows[0]["Passive1VisionGlassThickness"].ToString()) > 0) //need to be int
+                                {
+                                    xlWorksheetGTInput.Cells[2][99].Value2 = "Vision";
+                                    xlWorksheetGTInput.Cells[2][100].Value2 = dt.Rows[0]["Passive1VisionLouvreHeight"].ToString();
+                                    xlWorksheetGTInput.Cells[2][101].Value2 = dt.Rows[0]["Passive1VisionLouvreWidth"].ToString();
+
+                                    if (dt.Rows[0]["Passive1VisionLouvreSetback"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][102].Value2 = "Offset";
+                                    else if (dt.Rows[0]["Passive1VisionLouvreSetback"].ToString() == "0")
+                                        xlWorksheetGTInput.Cells[2][102].Value2 = "Central";
+
+                                    // xlWorksheetGTInput.Cells[2][103].Value2 = dt.Rows[0]["Passive1VisionLouvreDistanceFromFloor"].ToString();
+
+
+                                }
+                                else if (Convert.ToInt32(dt.Rows[0]["Passive1VisionGlassThickness"].ToString()) == 0 &&
+                                         Convert.ToInt32(dt.Rows[0]["Passive1VisionLouvreHeight"].ToString()) > 0) //need to be int
+                                {
+                                    xlWorksheetGTInput.Cells[2][90].Value2 = "Louver";
+                                    xlWorksheetGTInput.Cells[2][91].Value2 = dt.Rows[0]["Passive1VisionLouvreHeight"].ToString();
+                                    xlWorksheetGTInput.Cells[2][92].Value2 = dt.Rows[0]["Passive1VisionLouvreWidth"].ToString();
+
+
+                                    if (dt.Rows[0]["Passive1VisionLouvreSetback"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][93].Value2 = "Offset";
+                                    else if (dt.Rows[0]["Passive1VisionLouvreSetback"].ToString() == "0")
+                                        xlWorksheetGTInput.Cells[2][93].Value2 = "Central";
+
+                                    xlWorksheetGTInput.Cells[2][94].Value2 = dt.Rows[0]["Passive1VisionLouvreDistanceFromFloor"].ToString();
+                                }
+
+                                //vision / louvre #2 ACTIVE
+                                if (Convert.ToInt32(dt.Rows[0]["Active2VisionGlassThickness"].ToString()) > 0) //need to be int
+                                {
+                                    xlWorksheetGTInput.Cells[2][108].Value2 = "Vision";
+                                    xlWorksheetGTInput.Cells[2][109].Value2 = dt.Rows[0]["Active2VisionLouvreHeight"].ToString();
+                                    xlWorksheetGTInput.Cells[2][110].Value2 = dt.Rows[0]["Active2VisionLouvreWidth"].ToString();
+
+                                    if (dt.Rows[0]["Active2VisionLouvreSetback"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][111].Value2 = "Offset";
+                                    else if (dt.Rows[0]["Active2VisionLouvreSetback"].ToString() == "0")
+                                        xlWorksheetGTInput.Cells[2][111].Value2 = "Central";
+
+                                    //xlWorksheetGTInput.Cells[2][112].Value2 = dt.Rows[0]["Active1VisionLouvreDistanceFromFloor"].ToString();
+
+
+                                }
+                                else if (Convert.ToInt32(dt.Rows[0]["Active2VisionGlassThickness"].ToString()) == 0 &&
+                                         Convert.ToInt32(dt.Rows[0]["Active2VisionLouvreHeight"].ToString()) > 0) //need to be int
+                                {
+                                    xlWorksheetGTInput.Cells[2][108].Value2 = "Louver";
+                                    xlWorksheetGTInput.Cells[2][109].Value2 = dt.Rows[0]["Active2VisionLouvreHeight"].ToString();
+                                    xlWorksheetGTInput.Cells[2][110].Value2 = dt.Rows[0]["Active2VisionLouvreWidth"].ToString();
+
+
+                                    if (dt.Rows[0]["Active2VisionLouvreSetback"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][111].Value2 = "Offset";
+                                    else if (dt.Rows[0]["Active2VisionLouvreSetback"].ToString() == "0")
+                                        xlWorksheetGTInput.Cells[2][111].Value2 = "Central";
+
+                                    //if this value is higher than the calculation to the right of it > set it to the calculation limit
+                                    if (xlWorksheetGTInput.Cells[2][109].Value2 > xlWorksheetGTInput.Cells[3][91].Value2)
+                                        xlWorksheetGTInput.Cells[2][109].Value2 = xlWorksheetGTInput.Cells[3][91].Value2;
+
+
+                                    xlWorksheetGTInput.Cells[2][112].Value2 = dt.Rows[0]["Active2VisionLouvreDistanceFromFloor"].ToString();
+
+                                }
+
+                                //vision / louvre #2 Passive
+                                if (Convert.ToInt32(dt.Rows[0]["Passive2VisionGlassThickness"].ToString()) > 0) //need to be int
+                                {
+                                    xlWorksheetGTInput.Cells[2][108].Value2 = "Vision";
+                                    xlWorksheetGTInput.Cells[2][109].Value2 = dt.Rows[0]["Passive2VisionLouvreHeight"].ToString();
+                                    xlWorksheetGTInput.Cells[2][110].Value2 = dt.Rows[0]["Passive2VisionLouvreWidth"].ToString();
+
+                                    if (dt.Rows[0]["Passive2VisionLouvreSetback"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][111].Value2 = "Offset";
+                                    else if (dt.Rows[0]["Passive2VisionLouvreSetback"].ToString() == "0")
+                                        xlWorksheetGTInput.Cells[2][111].Value2 = "Central";
+
+                                    xlWorksheetGTInput.Cells[2][112].Value2 = dt.Rows[0]["Passive1VisionLouvreDistanceFromFloor"].ToString();
+
+
+                                }
+                                else if (Convert.ToInt32(dt.Rows[0]["Passive2VisionGlassThickness"].ToString()) == 0 &&
+                                         Convert.ToInt32(dt.Rows[0]["Passive2VisionLouvreHeight"].ToString()) > 0) //need to be int
+                                {
+                                    xlWorksheetGTInput.Cells[2][117].Value2 = "Louver";
+                                    xlWorksheetGTInput.Cells[2][118].Value2 = dt.Rows[0]["Passive2VisionLouvreHeight"].ToString();
+                                    xlWorksheetGTInput.Cells[2][119].Value2 = dt.Rows[0]["Passive2VisionLouvreWidth"].ToString();
+
+
+                                    if (dt.Rows[0]["Passive2VisionLouvreSetback"].ToString() == "1")
+                                        xlWorksheetGTInput.Cells[2][120].Value2 = "Offset";
+                                    else if (dt.Rows[0]["Passive2VisionLouvreSetback"].ToString() == "0")
+                                        xlWorksheetGTInput.Cells[2][120].Value2 = "Central";
+
+                                    xlWorksheetGTInput.Cells[2][121].Value2 = dt.Rows[0]["Passive2VisionLouvreDistanceFromFloor"].ToString();
+
+
+                                    sql = "select stock_code FROM dbo.STOCK where description = '" + dt.Rows[0]["TopLockingBolt"].ToString() + "'";
+                                    using (SqlCommand cmdAny1 = new SqlCommand(sql))
+                                    {
+                                        sql = "select GT_input_name FROM dbo.bridge_hardware where stock_code = '" + cmdAny1.ExecuteScalar().ToString() + "'";
+                                        using (SqlCommand cmdAny1StockCode = new SqlCommand(sql, conn))
+                                        {
+                                            xlWorksheetGTInput.Cells[2][130].Value2 = cmdAny1StockCode.ExecuteScalar().ToString().Trim();
                                         }
                                     }
-
                                 }
-                            }
 
 
-                            //pushplate stuffs
-                            if (dt.Rows[0]["PullHandleCode"].ToString() == "286")
-                            {
-                                //if there is a pushplate then we use > "Pull Handle 19 x 300 Rose Mounted St.St. & 330mm x 76mm Push Plate"
-                                if (dt.Rows[0]["PushPlateType"].ToString().Length > 0)
-                                    xlWorksheetGTInput.Cells[2][62].Value2 = "Pull Handle 19 x 300 Rose Mounted St.St. & 330mm x 76mm Push Plate";
-                                else
-                                    xlWorksheetGTInput.Cells[2][62].Value2 = "Pull Handle 19 x 300 Rose Mounted St.St.";
-                            }
+                                xlWorksheetGTInput.Cells[2][126].Value2 = dt.Rows[0]["KickPlateSide"].ToString();
 
-                            //xlWorksheetGTInput.Cells[2][63].Value2 = dt.Rows[0]["pushPlateSide"].ToString(); //translate)
-                            if (dt.Rows[0]["pushPlateSide"].ToString() == "Pull Side")
-                                xlWorksheetGTInput.Cells[2][63].Value2 = "Pullside";
-                            else if (dt.Rows[0]["pushPlateSide"].ToString() == "Push Side")
-                                xlWorksheetGTInput.Cells[2][63].Value2 = "Pushside";
-                            else if (dt.Rows[0]["pushPlateSide"].ToString() == "Both Side")
-                                xlWorksheetGTInput.Cells[2][63].Value2 = "Both sides";
+                                //translate >> dont need MM
+                                xlWorksheetGTInput.Cells[2][127].Value2 = Regex.Match(dt.Rows[0]["kickPlateType"].ToString(), @"\d+").Value;
 
-                            if (dt.Rows[0]["pushPlateLeaves"].ToString() == "Active")
-                                xlWorksheetGTInput.Cells[2][64].Value2 = "1st Leaf";
-                            else if (dt.Rows[0]["pushPlateLeaves"].ToString() == "Passive")
-                                xlWorksheetGTInput.Cells[2][64].Value2 = "2nd Leaf";
-                            else if (dt.Rows[0]["pushPlateLeaves"].ToString() == "Active/Passive")
-                                xlWorksheetGTInput.Cells[2][64].Value2 = "Both Leafs";
-
-
-
-
-                            //Closers
-
-                            sql = "SELECT GT_input_name FROM dbo.bridge_hardware WHERE stock_code = '" + dt.Rows[0]["CloserStockCode"].ToString() + "'";
-                            using (SqlCommand cmdCloser = new SqlCommand(sql, conn))
-                            {
-                                var temp = cmdCloser.ExecuteScalar();
-                                if (temp != null)
-                                {
-                                    xlWorksheetGTInput.Cells[2][67].Value2 = cmdCloser.ExecuteScalar().ToString();
-
-                                    xlWorksheetGTInput.Cells[2][68].Value2 = dt.Rows[0]["closerPullside"].ToString(); //closerPullside = 1 then pull side closerpushside = 1 then push
-                                    if (dt.Rows[0]["closerPullside"].ToString() == "1" && dt.Rows[0]["closerpushside"].ToString() == "0")
-                                        xlWorksheetGTInput.Cells[2][68].Value2 = "Pullside";
-                                    else if (dt.Rows[0]["closerPullside"].ToString() == "0" && dt.Rows[0]["closerpushside"].ToString() == "1")
-                                        xlWorksheetGTInput.Cells[2][68].Value2 = "Pushside";
-
-                                    if (dt.Rows[0]["closerOnActive"].ToString() == "1")
-                                        xlWorksheetGTInput.Cells[2][69].Value2 = "Yes";
-
-                                    if (dt.Rows[0]["closerOnPassive"].ToString() == "1")
-                                        xlWorksheetGTInput.Cells[2][71].Value2 = "Yes";
-                                }
-                            }
-
-
-
-
-                            if (dt.Rows[0]["StayLeaves"].ToString() == "Active")
-                                xlWorksheetGTInput.Cells[2][64].Value2 = "1st Leaf";
-                            else if (dt.Rows[0]["StayLeaves"].ToString() == "Passive")
-                                xlWorksheetGTInput.Cells[2][64].Value2 = "2nd Leaf";
-                            else if (dt.Rows[0]["StayLeaves"].ToString() == "Active/Passive")
-                                xlWorksheetGTInput.Cells[2][64].Value2 = "Both Leafs";
-
-                            //end of closers
-
-
-
-
-                            //stay
-                            sql = "SELECT RTRIM(GT_input_name) FROM dbo.bridge_hardware bh " +
-                                "left join dbo.stock s on bh.stock_code = s.stock_code WHERE s.description = '" + dt.Rows[0]["StayType"].ToString() + "'";
-                            using (SqlCommand cmdStay = new SqlCommand(sql, conn))
-                            {
-                                if (string.IsNullOrEmpty(dt.Rows[0]["StayType"].ToString()))
-                                { }
-                                else
-                                    xlWorksheetGTInput.Cells[2][74].Value2 = cmdStay.ExecuteScalar().ToString().Trim();
-                            }
-
-                            //leaf selector
-                            if (dt.Rows[0]["LeafSelectorType"].ToString().Contains("MK2 SELECTOR EXTENDED  CATCH 152 ARM SAA"))
-                                xlWorksheetGTInput.Cells[2][77].Value2 = " c/w Extended Catch & Arm SAA (Wedge)";
-
-                            if (dt.Rows[0]["SpyHoleType"].ToString().Length > 0)
-                                xlWorksheetGTInput.Cells[2][83].Value2 = "Zero 200 UL Door Viewer (Fire Rated)";
-
-
-                            //vision / lourvre #1 ACTIVE
-                            if (Convert.ToInt32(dt.Rows[0]["Active1VisionGlassThickness"].ToString()) > 0) //need to be int
-                            {
-                                xlWorksheetGTInput.Cells[2][90].Value2 = "Vision";
-                                xlWorksheetGTInput.Cells[2][91].Value2 = dt.Rows[0]["Active1VisionLouvreHeight"].ToString();
-                                xlWorksheetGTInput.Cells[2][92].Value2 = dt.Rows[0]["Active1VisionLouvreWidth"].ToString();
-
-                                if (dt.Rows[0]["Active1VisionLouvreSetback"].ToString() == "1")
-                                    xlWorksheetGTInput.Cells[2][93].Value2 = "Offset";
-                                else if (dt.Rows[0]["Active1VisionLouvreSetback"].ToString() == "0")
-                                    xlWorksheetGTInput.Cells[2][93].Value2 = "Central";
-
-                                xlWorksheetGTInput.Cells[2][94].Value2 = dt.Rows[0]["Active1VisionLouvreDistanceFromFloor"].ToString();
-
-
-                            }
-                            else if (Convert.ToInt32(dt.Rows[0]["Active1VisionGlassThickness"].ToString()) == 0 &&
-                                     Convert.ToInt32(dt.Rows[0]["Active1VisionLouvreHeight"].ToString()) > 0) //need to be int
-                            {
-                                xlWorksheetGTInput.Cells[2][90].Value2 = "Louver";
-                                xlWorksheetGTInput.Cells[2][91].Value2 = dt.Rows[0]["Active1VisionLouvreHeight"].ToString();
-
-                                //if this value is higher than the calculation to the right of it > set it to the calculation limit
-                                if (xlWorksheetGTInput.Cells[2][91].Value2 > xlWorksheetGTInput.Cells[3][91].Value2)
-                                    xlWorksheetGTInput.Cells[2][91].Value2 = xlWorksheetGTInput.Cells[3][91].Value2;
-
-                                xlWorksheetGTInput.Cells[2][92].Value2 = dt.Rows[0]["Active1VisionLouvreWidth"].ToString();
-
-
-                                if (dt.Rows[0]["Active1VisionLouvreSetback"].ToString() == "1")
-                                    xlWorksheetGTInput.Cells[2][93].Value2 = "Offset";
-                                else if (dt.Rows[0]["Active1VisionLouvreSetback"].ToString() == "0")
-                                    xlWorksheetGTInput.Cells[2][93].Value2 = "Central";
-
-                                xlWorksheetGTInput.Cells[2][94].Value2 = dt.Rows[0]["Active1VisionLouvreDistanceFromFloor"].ToString();
-                            }
-
-                            //vision / lourvre #1 PASSIVE
-                            if (Convert.ToInt32(dt.Rows[0]["Passive1VisionGlassThickness"].ToString()) > 0) //need to be int
-                            {
-                                xlWorksheetGTInput.Cells[2][99].Value2 = "Vision";
-                                xlWorksheetGTInput.Cells[2][100].Value2 = dt.Rows[0]["Passive1VisionLouvreHeight"].ToString();
-                                xlWorksheetGTInput.Cells[2][101].Value2 = dt.Rows[0]["Passive1VisionLouvreWidth"].ToString();
-
-                                if (dt.Rows[0]["Passive1VisionLouvreSetback"].ToString() == "1")
-                                    xlWorksheetGTInput.Cells[2][102].Value2 = "Offset";
-                                else if (dt.Rows[0]["Passive1VisionLouvreSetback"].ToString() == "0")
-                                    xlWorksheetGTInput.Cells[2][102].Value2 = "Central";
-
-                                // xlWorksheetGTInput.Cells[2][103].Value2 = dt.Rows[0]["Passive1VisionLouvreDistanceFromFloor"].ToString();
-
-
-                            }
-                            else if (Convert.ToInt32(dt.Rows[0]["Passive1VisionGlassThickness"].ToString()) == 0 &&
-                                     Convert.ToInt32(dt.Rows[0]["Passive1VisionLouvreHeight"].ToString()) > 0) //need to be int
-                            {
-                                xlWorksheetGTInput.Cells[2][90].Value2 = "Louver";
-                                xlWorksheetGTInput.Cells[2][91].Value2 = dt.Rows[0]["Passive1VisionLouvreHeight"].ToString();
-                                xlWorksheetGTInput.Cells[2][92].Value2 = dt.Rows[0]["Passive1VisionLouvreWidth"].ToString();
-
-
-                                if (dt.Rows[0]["Passive1VisionLouvreSetback"].ToString() == "1")
-                                    xlWorksheetGTInput.Cells[2][93].Value2 = "Offset";
-                                else if (dt.Rows[0]["Passive1VisionLouvreSetback"].ToString() == "0")
-                                    xlWorksheetGTInput.Cells[2][93].Value2 = "Central";
-
-                                xlWorksheetGTInput.Cells[2][94].Value2 = dt.Rows[0]["Passive1VisionLouvreDistanceFromFloor"].ToString();
-                            }
-
-                            //vision / louvre #2 ACTIVE
-                            if (Convert.ToInt32(dt.Rows[0]["Active2VisionGlassThickness"].ToString()) > 0) //need to be int
-                            {
-                                xlWorksheetGTInput.Cells[2][108].Value2 = "Vision";
-                                xlWorksheetGTInput.Cells[2][109].Value2 = dt.Rows[0]["Active2VisionLouvreHeight"].ToString();
-                                xlWorksheetGTInput.Cells[2][110].Value2 = dt.Rows[0]["Active2VisionLouvreWidth"].ToString();
-
-                                if (dt.Rows[0]["Active2VisionLouvreSetback"].ToString() == "1")
-                                    xlWorksheetGTInput.Cells[2][111].Value2 = "Offset";
-                                else if (dt.Rows[0]["Active2VisionLouvreSetback"].ToString() == "0")
-                                    xlWorksheetGTInput.Cells[2][111].Value2 = "Central";
-
-                                //xlWorksheetGTInput.Cells[2][112].Value2 = dt.Rows[0]["Active1VisionLouvreDistanceFromFloor"].ToString();
-
-
-                            }
-                            else if (Convert.ToInt32(dt.Rows[0]["Active2VisionGlassThickness"].ToString()) == 0 &&
-                                     Convert.ToInt32(dt.Rows[0]["Active2VisionLouvreHeight"].ToString()) > 0) //need to be int
-                            {
-                                xlWorksheetGTInput.Cells[2][108].Value2 = "Louver";
-                                xlWorksheetGTInput.Cells[2][109].Value2 = dt.Rows[0]["Active2VisionLouvreHeight"].ToString();
-                                xlWorksheetGTInput.Cells[2][110].Value2 = dt.Rows[0]["Active2VisionLouvreWidth"].ToString();
-
-
-                                if (dt.Rows[0]["Active2VisionLouvreSetback"].ToString() == "1")
-                                    xlWorksheetGTInput.Cells[2][111].Value2 = "Offset";
-                                else if (dt.Rows[0]["Active2VisionLouvreSetback"].ToString() == "0")
-                                    xlWorksheetGTInput.Cells[2][111].Value2 = "Central";
-
-                                //if this value is higher than the calculation to the right of it > set it to the calculation limit
-                                if (xlWorksheetGTInput.Cells[2][109].Value2 > xlWorksheetGTInput.Cells[3][91].Value2)
-                                    xlWorksheetGTInput.Cells[2][109].Value2 = xlWorksheetGTInput.Cells[3][91].Value2;
-
-
-                                xlWorksheetGTInput.Cells[2][112].Value2 = dt.Rows[0]["Active2VisionLouvreDistanceFromFloor"].ToString();
+                                xlWorksheetGTInput.Cells[2][128].Value2 = dt.Rows[0]["KickPlateLeaves"].ToString();
 
                             }
 
-                            //vision / louvre #2 Passive
-                            if (Convert.ToInt32(dt.Rows[0]["Passive2VisionGlassThickness"].ToString()) > 0) //need to be int
-                            {
-                                xlWorksheetGTInput.Cells[2][108].Value2 = "Vision";
-                                xlWorksheetGTInput.Cells[2][109].Value2 = dt.Rows[0]["Passive2VisionLouvreHeight"].ToString();
-                                xlWorksheetGTInput.Cells[2][110].Value2 = dt.Rows[0]["Passive2VisionLouvreWidth"].ToString();
+                            int max_bridge_id = 0;
+                            sql = "select top 1 id from dbo.bridge_log where door_id = " + door_number + " order by id desc";
+                            using (SqlCommand cmdBridgeLog = new SqlCommand(sql, conn))
+                                max_bridge_id = (int)cmdBridgeLog.ExecuteScalar();
 
-                                if (dt.Rows[0]["Passive2VisionLouvreSetback"].ToString() == "1")
-                                    xlWorksheetGTInput.Cells[2][111].Value2 = "Offset";
-                                else if (dt.Rows[0]["Passive2VisionLouvreSetback"].ToString() == "0")
-                                    xlWorksheetGTInput.Cells[2][111].Value2 = "Central";
+                            sql = "update dbo.bridge_log SET gt_input_success = -1 WHERE id = " + max_bridge_id.ToString();
+                            using (SqlCommand cmdBridgeLog = new SqlCommand(sql, conn))
+                                cmdBridgeLog.ExecuteNonQuery();
 
-                                xlWorksheetGTInput.Cells[2][112].Value2 = dt.Rows[0]["Passive1VisionLouvreDistanceFromFloor"].ToString();
-
-
-                            }
-                            else if (Convert.ToInt32(dt.Rows[0]["Passive2VisionGlassThickness"].ToString()) == 0 &&
-                                     Convert.ToInt32(dt.Rows[0]["Passive2VisionLouvreHeight"].ToString()) > 0) //need to be int
-                            {
-                                xlWorksheetGTInput.Cells[2][117].Value2 = "Louver";
-                                xlWorksheetGTInput.Cells[2][118].Value2 = dt.Rows[0]["Passive2VisionLouvreHeight"].ToString();
-                                xlWorksheetGTInput.Cells[2][119].Value2 = dt.Rows[0]["Passive2VisionLouvreWidth"].ToString();
-
-
-                                if (dt.Rows[0]["Passive2VisionLouvreSetback"].ToString() == "1")
-                                    xlWorksheetGTInput.Cells[2][120].Value2 = "Offset";
-                                else if (dt.Rows[0]["Passive2VisionLouvreSetback"].ToString() == "0")
-                                    xlWorksheetGTInput.Cells[2][120].Value2 = "Central";
-
-                                xlWorksheetGTInput.Cells[2][121].Value2 = dt.Rows[0]["Passive2VisionLouvreDistanceFromFloor"].ToString();
-
-
-                                sql = "select stock_code FROM dbo.STOCK where description = '" + dt.Rows[0]["TopLockingBolt"].ToString() + "'";
-                                using (SqlCommand cmdAny1 = new SqlCommand(sql))
-                                {
-                                    sql = "select GT_input_name FROM dbo.bridge_hardware where stock_code = '" + cmdAny1.ExecuteScalar().ToString() + "'";
-                                    using (SqlCommand cmdAny1StockCode = new SqlCommand(sql, conn))
-                                    {
-                                        xlWorksheetGTInput.Cells[2][130].Value2 = cmdAny1StockCode.ExecuteScalar().ToString().Trim();
-                                    }
-                                }
-                            }
-
-
-                            xlWorksheetGTInput.Cells[2][126].Value2 = dt.Rows[0]["KickPlateSide"].ToString();
-
-
-
-                            //translate >> dont need MM
-                            xlWorksheetGTInput.Cells[2][127].Value2 = Regex.Match(dt.Rows[0]["kickPlateType"].ToString(), @"\d+").Value;
-
-                            xlWorksheetGTInput.Cells[2][128].Value2 = dt.Rows[0]["KickPlateLeaves"].ToString();
-
+                            conn.Close();
                         }
 
-                        conn.Close();
+
+                        // Save the excel file under the captured location from the SaveFileDialog
+                        xlWorkbookGTInput.SaveAs(new_GT_input_location);//@"C:\temp\GTINPUT\GT INPUTaaa");
+                        xlAppGTInput.DisplayAlerts = true;
+                        xlWorkbookGTInput.Close(true, misValue, misValue);
+                        xlAppGTInput.Quit();
+
+                        // Open the newly saved excel file
+                        if (File.Exists(new_GT_input_location))
+                            System.Diagnostics.Process.Start(new_GT_input_location);
+
+
                     }
+                    catch
+                    {
+                        //update dbo.bridge_log
+                        int max_bridge_id = 0;
 
+                        using (SqlConnection conn = new SqlConnection(CONNECT.ConnectionString))
+                        {
+                            conn.Open();
+                            string sql = "select top 1 id from dbo.bridge_log where door_id = " + door_number + " order by id desc";
+                            using (SqlCommand cmd = new SqlCommand(sql, conn))
+                                max_bridge_id = (int)cmd.ExecuteScalar();
 
-                    // Save the excel file under the captured location from the SaveFileDialog
-                    xlWorkbookGTInput.SaveAs(new_GT_input_location);//@"C:\temp\GTINPUT\GT INPUTaaa");
-                    xlAppGTInput.DisplayAlerts = true;
-                    xlWorkbookGTInput.Close(true, misValue, misValue);
-                    xlAppGTInput.Quit();
-
-                    // Open the newly saved excel file
-                    if (File.Exists(new_GT_input_location))
-                        System.Diagnostics.Process.Start(new_GT_input_location);
+                            sql = "update dbo.bridge_log SET gt_input_success = 0 WHERE id = " + max_bridge_id.ToString();
+                            using (SqlCommand cmd = new SqlCommand(sql, conn))
+                                cmd.ExecuteNonQuery();
+                            conn.Close();
+                        }
+                    }
 
                 }
 
