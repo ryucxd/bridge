@@ -1053,7 +1053,7 @@ namespace bridge
                             else if (dt.Rows[0]["CillType"].ToString() == "Head Jamb Cill" &&
                                 (xlWorksheetGTInput.Cells[4][12].Value2 == "1" || xlWorksheetGTInput.Cells[4][12].Value2 == "2" ||
                                     xlWorksheetGTInput.Cells[4][12].Value2 == "7" || xlWorksheetGTInput.Cells[4][12].Value2 == "8")) //BIG TEST
-                                    xlWorksheetGTInput.Cells[2][27].Value2 = "Head Jamb (Jtype 1,2,7,8)";
+                                xlWorksheetGTInput.Cells[2][27].Value2 = "Head Jamb (Jtype 1,2,7,8)";
                             else if (dt.Rows[0]["CillType"].ToString() == "Head Jamb Cill" &&
                                     (xlWorksheetGTInput.Cells[4][12].Value2 == "3" || xlWorksheetGTInput.Cells[4][12].Value2 == "4" ||
                                      xlWorksheetGTInput.Cells[4][12].Value2 == "5" || xlWorksheetGTInput.Cells[4][12].Value2 == "6")) //BIG TEST
@@ -1083,7 +1083,7 @@ namespace bridge
                             else if (dt.Rows[0]["Handing"].ToString().Contains("R"))
                                 xlWorksheetGTInput.Cells[2][31].Value2 = "Right Hand";
 
-                             xlWorksheetGTInput.Cells[2][32].Value2 = dt.Rows[0]["openingDirection"].ToString();
+                            xlWorksheetGTInput.Cells[2][32].Value2 = dt.Rows[0]["openingDirection"].ToString();
 
 
 
@@ -1124,11 +1124,11 @@ namespace bridge
                             //door loop
                             if (dt.Rows[0]["DoorLoopType"].ToString().Contains("DL8"))
                             {
-                                xlWorksheetGTInput.Cells[2][42].Value2 = "Abloy DL8 Surface Mounted"; //same for the below??
+                                xlWorksheetGTInput.Cells[2][42].Value2 = "Abloy DL8 Surface Mounted Door Loop"; //same for the below??
                                 xlWorksheetGTInput.Cells[2][43].Value2 = "Active Leaf";
                             }
                             else if (dt.Rows[0]["DoorLoopType"].ToString().Contains("EA280"))
-                                xlWorksheetGTInput.Cells[2][42].Value2 = "Abloy EA280 Concealed";
+                                xlWorksheetGTInput.Cells[2][42].Value2 = "Abloy EA280 Concealed Door Loop";
 
 
                             //top lock
@@ -1292,9 +1292,79 @@ namespace bridge
                             if (dt.Rows[0]["LeafSelectorType"].ToString().Contains("MK2 SELECTOR EXTENDED  CATCH 152 ARM SAA"))
                                 xlWorksheetGTInput.Cells[2][77].Value2 = " c/w Extended Catch & Arm SAA (Wedge)";
 
+
+                            //letterbox leaf 
+                            if (dt.Rows[0]["LetterBoxActive"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][79].Value2 = "10\" Aluminium"; //not sure this is going to add the " into the correct spot 
+
+                            if (dt.Rows[0]["LetterBoxPassive"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][79].Value2 = "10\" Aluminium"; //not sure this is going to add the " into the correct spot 
+
+                            if (dt.Rows[0]["LetterBoxHeight"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][79].Value2 = "High";
+                            else if (dt.Rows[0]["LetterBoxHeight"].ToString() == "2")
+                                xlWorksheetGTInput.Cells[2][79].Value2 = "Low";
+
+
                             if (dt.Rows[0]["SpyHoleType"].ToString().Length > 0)
                                 xlWorksheetGTInput.Cells[2][83].Value2 = "Zero 200 UL Door Viewer (Fire Rated)";
 
+
+                            //round visions
+                            if (dt.Rows[0]["RoundVisionNumberActive"].ToString() == "7")
+                            {
+                                xlWorksheetGTInput.Cells[2][85].Value2 = "Zero SP250";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+                            else if (dt.Rows[0]["RoundVisionNumberActive"].ToString() == "8")
+                            {
+                                xlWorksheetGTInput.Cells[2][85].Value2 = "Zero SP350";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+                            else if (dt.Rows[0]["RoundVisionNumberActive"].ToString() == "9")
+                            {
+                                xlWorksheetGTInput.Cells[2][85].Value2 = "Zero SP450";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+                            else if (dt.Rows[0]["RoundVisionNumberActive"].ToString() == "11")
+                            {
+                                xlWorksheetGTInput.Cells[2][85].Value2 = "Zero SP450 (Double Glazed)";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+                            else if (dt.Rows[0]["RoundVisionNumberActive"].ToString() == "10")
+                            {
+                                xlWorksheetGTInput.Cells[2][85].Value2 = "Zero SP550";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+
+                            if (dt.Rows[0]["RoundVisionNumberPassive"].ToString() == "7")
+                            {
+                                xlWorksheetGTInput.Cells[2][86].Value2 = "Zero SP250";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+                            else if (dt.Rows[0]["RoundVisionNumberPassive"].ToString() == "8")
+                            {
+                                xlWorksheetGTInput.Cells[2][86].Value2 = "Zero SP350";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+                            else if (dt.Rows[0]["RoundVisionNumberPassive"].ToString() == "9")
+                            {
+                                xlWorksheetGTInput.Cells[2][86].Value2 = "Zero SP450";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+                            else if (dt.Rows[0]["RoundVisionNumberPassive"].ToString() == "11")
+                            {
+                                xlWorksheetGTInput.Cells[2][86].Value2 = "Zero SP450 (Double Glazed)";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+                            else if (dt.Rows[0]["RoundVisionNumberPassive"].ToString() == "10")
+                            {
+                                xlWorksheetGTInput.Cells[2][86].Value2 = "Zero SP550";
+                                xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
+                            }
+
+                            xlWorksheetGTInput.Cells[2][87].Value2 = dt.Rows[0]["RoundVisionHeight"].ToString();
+                            //////////////////////////////////////////////////////////////////////////
 
                             //vision / lourvre #1 ACTIVE
                             if (Convert.ToInt32(dt.Rows[0]["Active1VisionGlassThickness"].ToString()) > 0) //need to be int
@@ -1453,6 +1523,117 @@ namespace bridge
                             xlWorksheetGTInput.Cells[2][127].Value2 = Regex.Match(dt.Rows[0]["kickPlateType"].ToString(), @"\d+").Value;
 
                             xlWorksheetGTInput.Cells[2][128].Value2 = dt.Rows[0]["KickPlateLeaves"].ToString();
+
+
+                            //signage 
+                            if (dt.Rows[0]["SignageDescription"].ToString().Contains("FIRE ESCAPE KEEP CLEAR"))
+                                xlWorksheetGTInput.Cells[2][141].Value2 = "Fire escape keep clear 76 dia";
+                            else if (dt.Rows[0]["SignageDescription"].ToString().Contains("FIRE DOOR KEEP SHUT"))
+                                xlWorksheetGTInput.Cells[2][141].Value2 = "Fire door keep shut 76 dia";
+                            else if (dt.Rows[0]["SignageDescription"].ToString().Contains("FIRE EXIT KEEP CLEAR"))
+                                xlWorksheetGTInput.Cells[2][141].Value2 = "Fire exit keep clear 76 dia";
+                            else if (dt.Rows[0]["SignageDescription"].ToString().Contains("FIRE DOOR KEEP CLEAR"))
+                                xlWorksheetGTInput.Cells[2][141].Value2 = "Fire door keep clear 76 dia";
+
+                            if (dt.Rows[0]["SignageSide"].ToString() == "Push Side")
+                                xlWorksheetGTInput.Cells[2][142].Value2 = "Pushside";
+                            else if (dt.Rows[0]["SignageSide"].ToString() == "Pull Side")
+                                xlWorksheetGTInput.Cells[2][142].Value2 = "Pullside";
+                            else if (dt.Rows[0]["SignageSide"].ToString() == "Both Sides")
+                                xlWorksheetGTInput.Cells[2][142].Value2 = "Both sides";
+                            else if (dt.Rows[0]["SignageSide"].ToString() == "Both Side")
+                                xlWorksheetGTInput.Cells[2][142].Value2 = "Both sides";
+
+
+                            if (dt.Rows[0]["SignageLeaf"].ToString() == "Active")
+                                xlWorksheetGTInput.Cells[2][143].Value2 = "1st Leaf";
+                            else if (dt.Rows[0]["SignageLeaf"].ToString() == "Passive")
+                                xlWorksheetGTInput.Cells[2][143].Value2 = "2nd Leaf";
+                            else if (dt.Rows[0]["SignageLeaf"].ToString() == "Active/Passive")
+                                xlWorksheetGTInput.Cells[2][143].Value2 = "Both Leafs";
+
+                            xlWorksheetGTInput.Cells[2][144].Value2 = dt.Rows[0]["SignageDistanceFromBottom"].ToString();
+                            xlWorksheetGTInput.Cells[2][145].Value2 = dt.Rows[0]["SignageBackset"].ToString();
+
+
+                            //panels 1 , 2 and 3
+                            int panel_count = 0;
+
+                            if (dt.Rows[0]["Panel1RemFix"].ToString() == "1")
+                            {
+                                xlWorksheetGTInput.Cells[2][155].Value2 = "Fixed";
+                                panel_count++;
+                            }
+                            else if (dt.Rows[0]["Panel1RemFix"].ToString() == "2")
+                            {
+                                xlWorksheetGTInput.Cells[2][155].Value2 = "Removable";
+                                panel_count++;
+                            }
+
+                            if (dt.Rows[0]["Panel1Type"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][156].Value2 = "Overpanel";
+                            else if (dt.Rows[0]["Panel1Type"].ToString() == "2")
+                                xlWorksheetGTInput.Cells[2][156].Value2 = "Side Panel LHS pullside";
+                            else if (dt.Rows[0]["Panel1Type"].ToString() == "3")
+                                xlWorksheetGTInput.Cells[2][156].Value2 = "Side Panel RHS pullside";
+                            else if (dt.Rows[0]["Panel1Type"].ToString() == "4")
+                                xlWorksheetGTInput.Cells[2][156].Value2 = "Hinged overpanel";
+
+                            xlWorksheetGTInput.Cells[2][157].Value2 = dt.Rows[0]["Panel1Width"].ToString();
+                            xlWorksheetGTInput.Cells[2][158].Value2 = dt.Rows[0]["Panel1Height"].ToString();
+
+                            if (dt.Rows[0]["Panel2RemFix"].ToString() == "1")
+                            {
+                                xlWorksheetGTInput.Cells[2][161].Value2 = "Fixed";
+                                panel_count++;
+                            }
+                            else if (dt.Rows[0]["Panel2RemFix"].ToString() == "2")
+                            {
+                                xlWorksheetGTInput.Cells[2][161].Value2 = "Removable";
+                                panel_count++;
+                            }
+
+                            if (dt.Rows[0]["Panel2Type"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][162].Value2 = "Overpanel";
+                            else if (dt.Rows[0]["Panel2Type"].ToString() == "2")
+                                xlWorksheetGTInput.Cells[2][162].Value2 = "Side Panel LHS pullside";
+                            else if (dt.Rows[0]["Panel2Type"].ToString() == "3")
+                                xlWorksheetGTInput.Cells[2][162].Value2 = "Side Panel RHS pullside";
+                            else if (dt.Rows[0]["Panel2Type"].ToString() == "4")
+                                xlWorksheetGTInput.Cells[2][162].Value2 = "Hinged overpanel";
+
+                            xlWorksheetGTInput.Cells[2][163].Value2 = dt.Rows[0]["Panel2Width"].ToString();
+                            xlWorksheetGTInput.Cells[2][164].Value2 = dt.Rows[0]["Panel2Height"].ToString();
+
+
+                            if (dt.Rows[0]["Panel3RemFix"].ToString() == "1")
+                            {
+                                xlWorksheetGTInput.Cells[2][167].Value2 = "Fixed";
+                                panel_count++;
+
+                            }
+                            else if (dt.Rows[0]["Panel3RemFix"].ToString() == "2")
+                            {
+                                xlWorksheetGTInput.Cells[2][167].Value2 = "Removable";
+                                panel_count++;
+                            }
+
+                            if (dt.Rows[0]["Panel3Type"].ToString() == "1")
+                                xlWorksheetGTInput.Cells[2][168].Value2 = "Overpanel";
+                            else if (dt.Rows[0]["Panel3Type"].ToString() == "2")
+                                xlWorksheetGTInput.Cells[2][168].Value2 = "Side Panel LHS pullside";
+                            else if (dt.Rows[0]["Panel3Type"].ToString() == "3")
+                                xlWorksheetGTInput.Cells[2][168].Value2 = "Side Panel RHS pullside";
+                            else if (dt.Rows[0]["Panel3Type"].ToString() == "4")
+                                xlWorksheetGTInput.Cells[2][168].Value2 = "Hinged overpanel";
+
+                            xlWorksheetGTInput.Cells[2][169].Value2 = dt.Rows[0]["Panel3Width"].ToString();
+                            xlWorksheetGTInput.Cells[2][170].Value2 = dt.Rows[0]["Panel3Height"].ToString();
+
+                            //add the counted number of panels being used
+                            if (panel_count > 0)
+                                xlWorksheetGTInput.Cells[2][153].Value2 = panel_count;
+
 
                         }
 
