@@ -16,10 +16,10 @@ namespace bridge
         static void Main(string[] args)
         {
             //below 2 need to be blank to run automated
-            string door_number = "67097"; //params
-            string quote_number = "80396-2-1";
-            //door_number = args[0]; //uncomment these for automation
-            //quote_number = args[1];//^^
+            string door_number = "";//"67097"; //params
+            string quote_number = "";//"80396-2-1";
+            door_number = args[0]; //uncomment these for automation
+            quote_number = args[1];//^^
 
             //wipe everything in that directory
             try
