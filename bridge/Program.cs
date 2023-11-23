@@ -16,10 +16,10 @@ namespace bridge
         static void Main(string[] args)
         {
             //below 2 need to be blank to run automated
-            string door_number = "";//"67097"; //params
-            string quote_number = "";//"80396-2-1";
-            door_number = args[0]; //uncomment these for automation
-            quote_number = args[1];//^^
+            string door_number = "136279"; //params
+            string quote_number = "81350-1-1";
+            //door_number = args[0]; //uncomment these for automation
+            //quote_number = args[1];//^^
 
             //wipe everything in that directory
             try
@@ -79,9 +79,9 @@ namespace bridge
             {
                 string rev_number = quote_number + "- Rev 1"; //+ quote_number.Substring(quote_number.Length - 1);
 
-                string startFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\" + "DataOutput " + quote_number + "- Door Designer.DO";//location
-                                                                                                                                                                                  //string startFile = @"\\designsvr1\DROPBOX\" + "DataOutput " + quote_number + "- Door Designer.DO";
-                                                                                                                                                                                  //string newFile = @"\\designsvr1\DROPBOX\" + "DataOutput " + quote_number + "- Door Designer2.DO";
+                string startFile = @"\\designsvr1\SOLIDWORKS\DWDevelopment\Specifications\" + quote_number + @"\documents\" + "+ " + quote_number + "- Door Designer.DO";//location
+                                                                                                                                                                         //string startFile = @"\\designsvr1\DROPBOX\" + "DataOutput " + quote_number + "- Door Designer.DO";
+                                                                                                                                                                         //string newFile = @"\\designsvr1\DROPBOX\" + "DataOutput " + quote_number + "- Door Designer2.DO";
                 string newFile = @"\\designsvr1\apps\Door Master\Orders\" + door_number + ".DO";
                 string hardwareExcelFile = @"\\designsvr1\solidworks\DWDevelopment\Specifications\" + quote_number + @"\Documents\HWAllocation " + quote_number + "- Door Designer.xlsx";
                 string checksheet = @"\\designsvr1\apps\all doors\CheckSheet.pdf";
@@ -1099,13 +1099,13 @@ namespace bridge
                             }
 
                             if (dt.Rows[0]["CentreLeverInside"].ToString() == "1")
-                                xlWorksheetGTInput.Cells[2][36].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
+                                xlWorksheetGTInput.Cells[2][36].Value2 = "Lever-Rose Fixed Stock Un-sprung St.St.";
 
                             if (dt.Rows[0]["centrelockheight"].ToString().Length > 0)
                                 xlWorksheetGTInput.Cells[4][36].Value2 = dt.Rows[0]["centrelockheight"].ToString(); //special box
 
                             if (dt.Rows[0]["CentreLeverOutside"].ToString() == "1")
-                                xlWorksheetGTInput.Cells[2][37].Value2 = "Lever-Rose Fixed Assa 640 Un-sprung St.St.";
+                                xlWorksheetGTInput.Cells[2][37].Value2 = "Lever-Rose Fixed Stock Un-sprung St.St.";
 
                             if (dt.Rows[0]["CentreLockingInside"].ToString() == "1")
                                 xlWorksheetGTInput.Cells[2][38].Value2 = "Yes";
@@ -1114,12 +1114,9 @@ namespace bridge
                                 xlWorksheetGTInput.Cells[2][39].Value2 = "Yes";
 
 
-                            if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains(" KEY / KEY ") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
-                                xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Full 31MM / 31MM SCP (Key o/s, Key i/s)";
-                            else if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains("KEY / TURN") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / KEY "))
-                                xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Half 31MM SCP (Key o/s, Thumbturn i/s)";
-                            else if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString().Contains("KEY / KEY ") && dt.Rows[0]["CentreOutsideEscutcheonName"].ToString().Contains("KEY / TURN"))
-                                xlWorksheetGTInput.Cells[2][40].Value2 = "Assa Half 31MM SCP (Thumbturn o/s, Key i/s)";
+                            if (dt.Rows[0]["CentreInsideEscutcheonName"].ToString() == "EUROPROFILE ESCUTCHEON 31305 St. St.")
+                                xlWorksheetGTInput.Cells[2][40].Value2 = "EUROPROFILE ESCUTCHEON 31305 St. St.";
+                            
 
                             //door loop
                             if (dt.Rows[0]["DoorLoopType"].ToString().Contains("DL8"))
@@ -1300,11 +1297,13 @@ namespace bridge
                             if (dt.Rows[0]["LetterBoxPassive"].ToString() == "1")
                                 xlWorksheetGTInput.Cells[2][79].Value2 = "10\" Aluminium"; //not sure this is going to add the " into the correct spot 
 
-                            if (dt.Rows[0]["LetterBoxHeight"].ToString() == "1")
-                                xlWorksheetGTInput.Cells[2][79].Value2 = "High";
-                            else if (dt.Rows[0]["LetterBoxHeight"].ToString() == "2")
-                                xlWorksheetGTInput.Cells[2][79].Value2 = "Low";
-
+                            if (dt.Rows[0]["LetterBoxActive"].ToString() == "1" || dt.Rows[0]["LetterBoxPassive"].ToString() == "1")
+                            {
+                                if (dt.Rows[0]["LetterBoxHeight"].ToString() == "1")
+                                    xlWorksheetGTInput.Cells[2][79].Value2 = "High";
+                                else if (dt.Rows[0]["LetterBoxHeight"].ToString() == "2")
+                                    xlWorksheetGTInput.Cells[2][79].Value2 = "Low";
+                            }
 
                             if (dt.Rows[0]["SpyHoleType"].ToString().Length > 0)
                                 xlWorksheetGTInput.Cells[2][83].Value2 = "Zero 200 UL Door Viewer (Fire Rated)";
@@ -1363,7 +1362,11 @@ namespace bridge
                                 xlWorksheetGTInput.Cells[2][88].Value2 = "Clear Laminate";
                             }
 
-                            xlWorksheetGTInput.Cells[2][87].Value2 = dt.Rows[0]["RoundVisionHeight"].ToString();
+                            if (dt.Rows[0]["RoundVisionHeight"].ToString() == "0")
+                            { }
+                            else
+                                xlWorksheetGTInput.Cells[2][87].Value2 = dt.Rows[0]["RoundVisionHeight"].ToString();
+
                             //////////////////////////////////////////////////////////////////////////
 
                             //vision / lourvre #1 ACTIVE
@@ -1552,8 +1555,15 @@ namespace bridge
                             else if (dt.Rows[0]["SignageLeaf"].ToString() == "Active/Passive")
                                 xlWorksheetGTInput.Cells[2][143].Value2 = "Both Leafs";
 
-                            xlWorksheetGTInput.Cells[2][144].Value2 = dt.Rows[0]["SignageDistanceFromBottom"].ToString();
-                            xlWorksheetGTInput.Cells[2][145].Value2 = dt.Rows[0]["SignageBackset"].ToString();
+                            if (dt.Rows[0]["SignageDistanceFromBottom"].ToString().Contains("-")) //stop the -2146826273 error
+                            { }
+                            else
+                                xlWorksheetGTInput.Cells[2][144].Value2 = dt.Rows[0]["SignageDistanceFromBottom"].ToString();
+
+                            if (dt.Rows[0]["SignageBackset"].ToString().Contains("-"))//stop the -2146826273 error
+                            { }
+                            else
+                                xlWorksheetGTInput.Cells[2][145].Value2 = dt.Rows[0]["SignageBackset"].ToString();
 
 
                             //panels 1 , 2 and 3
@@ -1579,8 +1589,8 @@ namespace bridge
                             else if (dt.Rows[0]["Panel1Type"].ToString() == "4")
                                 xlWorksheetGTInput.Cells[2][156].Value2 = "Hinged overpanel";
 
-                            xlWorksheetGTInput.Cells[2][157].Value2 = dt.Rows[0]["Panel1Width"].ToString();
-                            xlWorksheetGTInput.Cells[2][158].Value2 = dt.Rows[0]["Panel1Height"].ToString();
+                            xlWorksheetGTInput.Cells[2][157].Value2 = dt.Rows[0]["Panel1Height"].ToString();
+                            xlWorksheetGTInput.Cells[2][158].Value2 = dt.Rows[0]["Panel1Width"].ToString();
 
                             if (dt.Rows[0]["Panel2RemFix"].ToString() == "1")
                             {
@@ -1602,9 +1612,14 @@ namespace bridge
                             else if (dt.Rows[0]["Panel2Type"].ToString() == "4")
                                 xlWorksheetGTInput.Cells[2][162].Value2 = "Hinged overpanel";
 
-                            xlWorksheetGTInput.Cells[2][163].Value2 = dt.Rows[0]["Panel2Width"].ToString();
-                            xlWorksheetGTInput.Cells[2][164].Value2 = dt.Rows[0]["Panel2Height"].ToString();
-
+                            if (dt.Rows[0]["Panel2Width"].ToString() == "0")
+                            { }
+                            else
+                                xlWorksheetGTInput.Cells[2][163].Value2 = dt.Rows[0]["Panel2Width"].ToString();
+                            if (dt.Rows[0]["Panel2Height"].ToString() == "0")
+                            { }
+                            else
+                                xlWorksheetGTInput.Cells[2][164].Value2 = dt.Rows[0]["Panel2Height"].ToString();
 
                             if (dt.Rows[0]["Panel3RemFix"].ToString() == "1")
                             {
@@ -1627,8 +1642,14 @@ namespace bridge
                             else if (dt.Rows[0]["Panel3Type"].ToString() == "4")
                                 xlWorksheetGTInput.Cells[2][168].Value2 = "Hinged overpanel";
 
-                            xlWorksheetGTInput.Cells[2][169].Value2 = dt.Rows[0]["Panel3Width"].ToString();
-                            xlWorksheetGTInput.Cells[2][170].Value2 = dt.Rows[0]["Panel3Height"].ToString();
+                            if (dt.Rows[0]["Panel3Width"].ToString() == "0")
+                            { }
+                            else
+                                xlWorksheetGTInput.Cells[2][169].Value2 = dt.Rows[0]["Panel3Width"].ToString();
+                            if (dt.Rows[0]["Panel3Height"].ToString() == "0")
+                            { }
+                            else
+                                xlWorksheetGTInput.Cells[2][170].Value2 = dt.Rows[0]["Panel3Height"].ToString();
 
                             //add the counted number of panels being used
                             if (panel_count > 0)
